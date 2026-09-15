@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Esquina · Tablero de Productos</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#0f172a; --slate:#475569; --soft:#f1f5f9; --line:#e2e8f0;
+    --amber:#f59e0b; --indigo:#4338ca; --rose:#e11d48; --teal:#0d9488;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Segoe UI", system-ui, -apple-system, sans-serif; background:var(--soft); color:var(--ink); line-height:1.5;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 20px 60px;}
+  header.hero{background:linear-gradient(135deg,#1e1b4b 0%,#4338ca 55%,#7c3aed 100%); color:#fff; padding:38px 0 46px; margin-bottom:-18px; position:relative; overflow:hidden;}
+  header.hero::after{content:""; position:absolute; inset:0; background:radial-gradient(circle at 85% 20%, rgba(245,158,11,.35), transparent 40%); pointer-events:none;}
+  .hero .wrap{position:relative; z-index:1;}
+  .hero .tag{display:inline-block; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); padding:4px 12px; border-radius:999px; font-size:12px; letter-spacing:.06em; backdrop-filter:blur(4px);}
+  .hero h1{font-size:32px; margin:12px 0 6px; font-weight:800;}
+  .hero p{max-width:720px; color:#e0e7ff; font-size:15px;}
+  .hero .emojis{font-size:26px; letter-spacing:6px; margin-top:14px;}
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:34px 0 8px;}
+  .kpi{background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:0 6px 18px rgba(15,23,42,.06);}
+  .kpi .k{font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--slate); font-weight:600;}
+  .kpi .v{font-size:26px; font-weight:800; margin-top:6px;}
+  .kpi .s{font-size:12px; color:var(--slate); margin-top:2px;}
+  .kpi[data-tone="amber"] .v{color:#b45309;}
+  .kpi[data-tone="rose"] .v{color:#be123c;}
+  .kpi[data-tone="indigo"] .v{color:#4338ca;}
+  .kpi[data-tone="teal"] .v{color:#0f766e;}
+  section.card{background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 6px 18px rgba(15,23,42,.05); margin-top:22px; padding:24px 26px 14px;}
+  section.card .sec-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+  section.card h2{font-size:20px; font-weight:800;}
+  section.card .emoji{font-size:24px;}
+  section.card .baseline{width:100%; color:var(--slate); font-size:14px; margin:6px 0 14px;}
+  .chart-box{height:340px; position:relative;}
+  .chart-box.tall{height:420px;}
+  .legend-note{font-size:12.5px; color:var(--slate); margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);}
+  .legend-note b{color:var(--ink);}
+  .pill{display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; margin-left:8px; vertical-align:middle;}
+  .pill.ok{background:#ecfdf5; color:#047857;}
+  .pill.warn{background:#fffbeb; color:#b45309;}
+  .table-box{overflow:auto; max-height:480px; border:1px solid var(--line); border-radius:12px; margin-top:6px;}
+  table{width:100%; border-collapse:collapse; font-size:13px; min-width:820px;}
+  thead th{position:sticky; top:0; background:#1e293b; color:#e2e8f0; text-align:left; padding:10px 12px; font-weight:600; z-index:1;}
+  tbody td{padding:8px 12px; border-top:1px solid var(--line);}
+  tbody tr:nth-child(even){background:#f8fafc;}
+  tr.rev{background:#fffbeb !important;}
+  tr.rev td:last-child{color:#92400e;}
+  .num{font-variant-numeric:tabular-nums; text-align:right;}
+  details.method{margin-top:22px; background:#fff; border:1px dashed var(--line); border-radius:14px; padding:14px 20px; color:var(--slate); font-size:13.5px;}
+  details.method summary{cursor:pointer; font-weight:700; color:var(--ink);}
+  details.method ul{margin:10px 0 0 18px;}
+  details.method li{margin:4px 0;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  footer{text-align:center; color:var(--slate); font-size:12.5px; margin-top:26px;}
+  @media (max-width:900px){.kpis{grid-template-columns:1fr 1fr;} .grid2{grid-template-columns:1fr;}}
+  .mono{font-family:ui-monospace, "Cascadia Code", Consolas, monospace;}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <span class="tag">INFORME DE INVENTARIO</span>
+    <h1>La Esquina · Tablero de Productos</h1>
+    <p>Un pantallazo amigable del catálogo, armado a partir del archivo <b class="mono">productos_limpios.csv</b>.
+       Aquí verás <b>cuántos</b> productos hay, <b>cuáles valen más</b> y qué filas todavía <b>necesitan una revisión humana</b>.</p>
+    <div class="emojis">🏪 📦 💰 🔎</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="kpis">
+    <div class="kpi" data-tone="indigo"><div class="k">Productos registrados</div><div class="v" id="k-productos">–</div><div class="s">filas en el catálogo limpio</div></div>
+    <div class="kpi" data-tone="teal"><div class="k">Valor total del catálogo</div><div class="v" id="k-valor">–</div><div class="s">suma de todos los precios (COP)</div></div>
+    <div class="kpi" data-tone="amber"><div class="k">Precio promedio</div><div class="v" id="k-precio">–</div><div class="s">por producto en el catálogo</div></div>
+    <div class="kpi" data-tone="rose"><div class="k">Fila(s) con dudas</div><div class="v" id="k-revision">–</div><div class="s">requieren revisión humana</div></div>
+  </div>
+
+  <section class="card">
+    <div class="sec-head"><span class="emoji">🧮</span><h2>¿Cuántos productos hay por categoría?</h2></div>
+    <p class="baseline">Cada barra cuenta los productos de un estante. La tienda trabaja con 5 familias y todas pesan casi igual: pasan de 18 a 20 productos cada una. Es una mezcla balanceada: ningún estante domina la tienda.</p>
+    <div class="chart-box"><canvas id="chCount"></canvas></div>
+    <p class="legend-note"><b>A leerlo así:</b> la barra más larga dice “en esta categoría hay más productos registrados”. La diferencia entre la más alta y la más baja es de solo 2 productos.</p>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="sec-head"><span class="emoji">💰</span><h2>¿Cuánto vale cada familia en total?</h2></div>
+      <p class="baseline">Sumamos el precio de todos los productos de cada categoría. Con esto sabes <b>en qué estante está la mayor parte del dinero</b> de la tienda.</p>
+      <div class="chart-box tall"><canvas id="chSum"></canvas></div>
+    </section>
+    <section class="card">
+      <div class="sec-head"><span class="emoji">🏷️</span><h2>Precio promedio por categoría</h2></div>
+      <p class="baseline">Si tuvieras que apostar por “el ticket típico” de cada estante, esta gráfica lo diría. <b>Papelería y Abarrotes</b> despachan los productos más caros en promedio; <b>Miscelánea</b> los más livianos.</p>
+      <div class="chart-box tall"><canvas id="chAvg"></canvas></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="sec-head"><span class="emoji">📊</span><h2>¿Qué tan caro es cada producto?</h2></div>
+    <p class="baseline">Cada producto aparece varias veces en el catálogo (con precios de distintos lotes o compras). Para cada uno mostramos el precio más bajo, el más alto y el promedio.</p>
+    <div class="chart-box" style="height:460px"><canvas id="chProd"></canvas></div>
+    <p class="legend-note"><b>Idea clave:</b> hay productos sin código y sin nombre (rezagados) que aparecen 1 sola vez; los verás al final de la lista. La distancia entre el precio bajo y el alto de un mismo producto revela cuánto cambia su valor entre lotes.</p>
+  </section>
+
+  <section class="card">
+    <div class="sec-head"><span class="emoji">🔎</span><h2>¿Cuántos registros necesitan revisión por categoría?</h2></div>
+    <p class="baseline">Cuando limpiamos los datos, algunas filas quedaron con <b>dudas</b>: sin precio, con precio aproximado (“X mil”) o con un código duplicado y precio contradictorio. No las borramos: las marcamos para que alguien las revise.</p>
+    <div class="chart-box"><canvas id="chPend"></canvas></div>
+    <p class="legend-note"><b>¿Por qué importa?</b> Estas filas cuentan dentro de los totales, pero sus valores no son 100% confiables todavía. Menos de 1 de cada 5 registros está en esta situación.</p>
+  </section>
+
+  <section class="card">
+    <div class="sec-head"><span class="emoji">🗂️</span><h2>Detalle fila por fila</h2>
+      <span class="pill warn">las filas doradas tienen dudas 🟡</span></div>
+    <div class="table-box">
+      <table>
+        <thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Proveedor</th><th class="num">Precio</th><th>Unidad</th><th>Pendiente de revisión</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details class="method">
+    <summary>🧠 ¿Cómo se leyó este archivo? (metodología)</summary>
+    <ul>
+      <li>Tomamos <b class="mono">productos_limpios.csv</b>, que ya pasó por una limpieza: se quitaron 5 duplicados exactos y se normalizaron categorías, códigos, unidades y formatos de precio.</li>
+      <li>Todos los valores monetarios están en <b>pesos colombianos (COP)</b>, sin símbolos ni separadores.</li>
+      <li>La columna <b>pendiente_revision</b> indica filas con un dato faltante o dudoso; siguen en los totales pero conviene revisarlas.</li>
+      <li>Los precios de un mismo producto varían porque hay varios registros (lotes), por eso mostramos mínimo, promedio y máximo.</li>
+    </ul>
+  </details>
+
+  <footer>Generado a partir de productos_limpios.csv · La Esquina · Los datos son de ejemplo, la lectura es real. 🪄</footer>
+</div>
+
+<script>
+const DATA = {"cats": ["Ferretería", "Miscelánea", "Panadería", "Abarrotes", "Papelería"], "cat_count": [19, 19, 18, 19, 20], "cat_sum": [1466234, 1373343, 1766389, 1986438, 2109990], "cat_avg": [81457, 80785, 98133, 104549, 105500], "cat_pend": [4, 5, 2, 3, 3], "cat_color": ["#2563EB", "#E11D48", "#F59E0B", "#0D9488", "#7C3AED"], "prods": ["(sin nombre)", "Atún Premium", "Galleta de avena Grande", "Martillo Clásico", "Producto sin código", "Resma de papel Mini", "Vela aromática Mediano"], "prod_min": [12500.0, 33401.0, 25482.0, 9644.0, 35000.0, 41320.0, 17563.0], "prod_avg": [12500, 104549, 98133, 84190, 35000, 110394, 80785], "prod_max": [12500.0, 191856.0, 183937.0, 168099.0, 35000.0, 199775.0, 176000.0], "prod_n": [1, 19, 18, 18, 1, 19, 19], "kpis": {"productos": 95, "valor_total": 8702394, "precio_promedio": 94591, "revision": 17}};
+const TABLE = [{"codigo": "FER-0001", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Alianza Nueva Granada", "precio": 9719, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0002", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Importadora San Martín", "precio": 17638, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0003", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Soluciones del Norte", "precio": 25557, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0004", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Distribuciones Andina", "precio": 33476, "unidad": "Paquete", "pendiente": ""}, {"codigo": "PAP-0005", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Alianza Nueva Granada", "precio": 41395, "unidad": "Paquete", "pendiente": ""}, {"codigo": "FER-0006", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Importadora San Martín", "precio": 49314, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0007", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Soluciones del Norte", "precio": 57233, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0008", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Distribuciones Andina", "precio": 65152, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0009", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Alianza Nueva Granada", "precio": 73071, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0010", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Importadora San Martín", "precio": 80990, "unidad": "Paquete", "pendiente": ""}, {"codigo": "FER-0011", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Soluciones del Norte", "precio": 88909, "unidad": "Paquete", "pendiente": ""}, {"codigo": "MIS-0012", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Distribuciones Andina", "precio": 96828, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0013", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Alianza Nueva Granada", "precio": 104747, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0014", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Importadora San Martín", "precio": 112666, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0015", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Soluciones del Norte", "precio": 120585, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0016", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Distribuciones Andina", "precio": 128504, "unidad": "Paquete", "pendiente": ""}, {"codigo": "MIS-0017", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Alianza Nueva Granada", "precio": 136423, "unidad": "Paquete", "pendiente": "id_proveedor faltante"}, {"codigo": "PAN-0018", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Importadora San Martín", "precio": 144342, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0019", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Soluciones del Norte", "precio": 152261, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0020", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Distribuciones Andina", "precio": 160180, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0021", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Alianza Nueva Granada", "precio": 168099, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0022", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Importadora San Martín", "precio": 176000, "unidad": "Paquete", "pendiente": "precio aproximado (X mil)"}, {"codigo": "PAN-0023", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Soluciones del Norte", "precio": 183937, "unidad": "Paquete", "pendiente": ""}, {"codigo": "ABA-0024", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Distribuciones Andina", "precio": 191856, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0025", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Alianza Nueva Granada", "precio": 199775, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0026", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Importadora San Martín", "precio": 9694, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0027", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Soluciones del Norte", "precio": 17613, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0028", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Distribuciones Andina", "precio": 25532, "unidad": "Paquete", "pendiente": ""}, {"codigo": "ABA-0029", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Alianza Nueva Granada", "precio": 33451, "unidad": "Paquete", "pendiente": ""}, {"codigo": "PAP-0030", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Importadora San Martín", "precio": 41370, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0031", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Soluciones del Norte", "precio": null, "unidad": "Unidad", "pendiente": "precio faltante"}, {"codigo": "MIS-0032", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Distribuciones Andina", "precio": 57208, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0033", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Alianza Nueva Granada", "precio": 65127, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0034", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Importadora San Martín", "precio": 73046, "unidad": "Paquete", "pendiente": "id_proveedor faltante"}, {"codigo": "PAP-0035", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Soluciones del Norte", "precio": 80965, "unidad": "Paquete", "pendiente": ""}, {"codigo": "FER-0036", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Distribuciones Andina", "precio": 88884, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0037", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Alianza Nueva Granada", "precio": 96803, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0038", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Importadora San Martín", "precio": 104722, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0039", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Soluciones del Norte", "precio": 112641, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0040", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Distribuciones Andina", "precio": 120560, "unidad": "Paquete", "pendiente": ""}, {"codigo": "FER-0041", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Alianza Nueva Granada", "precio": 128479, "unidad": "Paquete", "pendiente": ""}, {"codigo": "MIS-0042", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Importadora San Martín", "precio": 136398, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0043", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Soluciones del Norte", "precio": 144317, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0044", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Distribuciones Andina", "precio": 152000, "unidad": "Unidad", "pendiente": "precio aproximado (X mil)"}, {"codigo": "PAP-0045", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Alianza Nueva Granada", "precio": 160155, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0046", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Importadora San Martín", "precio": 168074, "unidad": "Paquete", "pendiente": ""}, {"codigo": "MIS-0047", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Soluciones del Norte", "precio": null, "unidad": "Paquete", "pendiente": "precio faltante"}, {"codigo": "PAN-0048", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Distribuciones Andina", "precio": 183912, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0049", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Alianza Nueva Granada", "precio": 191831, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0050", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Importadora San Martín", "precio": 199750, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0051", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Soluciones del Norte", "precio": 9669, "unidad": "Unidad", "pendiente": "id_proveedor faltante"}, {"codigo": "MIS-0052", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Distribuciones Andina", "precio": 17588, "unidad": "Paquete", "pendiente": ""}, {"codigo": "PAN-0053", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Alianza Nueva Granada", "precio": 25507, "unidad": "Paquete", "pendiente": ""}, {"codigo": "ABA-0054", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Importadora San Martín", "precio": 33426, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0055", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Soluciones del Norte", "precio": 41345, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0056", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Distribuciones Andina", "precio": 49264, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0057", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Alianza Nueva Granada", "precio": 57183, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0058", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Importadora San Martín", "precio": 65102, "unidad": "Paquete", "pendiente": ""}, {"codigo": "ABA-0059", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Soluciones del Norte", "precio": 73021, "unidad": "Paquete", "pendiente": ""}, {"codigo": "PAP-0060", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Distribuciones Andina", "precio": 80940, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0061", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Alianza Nueva Granada", "precio": 88859, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0062", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Importadora San Martín", "precio": null, "unidad": "Unidad", "pendiente": "precio faltante"}, {"codigo": "PAN-0063", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Soluciones del Norte", "precio": 104697, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0064", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Distribuciones Andina", "precio": 112616, "unidad": "Paquete", "pendiente": ""}, {"codigo": "PAP-0065", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Alianza Nueva Granada", "precio": 120535, "unidad": "Paquete", "pendiente": ""}, {"codigo": "FER-0066", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Importadora San Martín", "precio": 128000, "unidad": "Unidad", "pendiente": "precio aproximado (X mil)"}, {"codigo": "MIS-0067", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Soluciones del Norte", "precio": 136373, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0068", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Distribuciones Andina", "precio": 144292, "unidad": "Unidad", "pendiente": "id_proveedor faltante"}, {"codigo": "ABA-0069", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Alianza Nueva Granada", "precio": 152211, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0070", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Importadora San Martín", "precio": 160130, "unidad": "Paquete", "pendiente": ""}, {"codigo": "FER-0071", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Soluciones del Norte", "precio": 168049, "unidad": "Paquete", "pendiente": ""}, {"codigo": "MIS-0072", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Distribuciones Andina", "precio": 175968, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0073", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Alianza Nueva Granada", "precio": 183887, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0074", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Importadora San Martín", "precio": 191806, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0075", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Soluciones del Norte", "precio": 199725, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0076", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Distribuciones Andina", "precio": 9644, "unidad": "Paquete", "pendiente": ""}, {"codigo": "MIS-0077", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Alianza Nueva Granada", "precio": 17563, "unidad": "Paquete", "pendiente": ""}, {"codigo": "PAN-0078", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Importadora San Martín", "precio": 25482, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0079", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Soluciones del Norte", "precio": 33401, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0080", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Distribuciones Andina", "precio": 41320, "unidad": "Unidad", "pendiente": ""}, {"codigo": "FER-0081", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Alianza Nueva Granada", "precio": 49239, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0082", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Importadora San Martín", "precio": 57158, "unidad": "Paquete", "pendiente": ""}, {"codigo": "PAN-0083", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Soluciones del Norte", "precio": 65077, "unidad": "Paquete", "pendiente": ""}, {"codigo": "ABA-0084", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Distribuciones Andina", "precio": 72996, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAP-0085", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Alianza Nueva Granada", "precio": 80915, "unidad": "Unidad", "pendiente": "id_proveedor faltante"}, {"codigo": "FER-0086", "nombre": "Martillo Clásico", "categoria": "Ferretería", "proveedor": "Importadora San Martín", "precio": 88834, "unidad": "Unidad", "pendiente": ""}, {"codigo": "MIS-0087", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Soluciones del Norte", "precio": 96753, "unidad": "Unidad", "pendiente": ""}, {"codigo": "PAN-0088", "nombre": "Galleta de avena Grande", "categoria": "Panadería", "proveedor": "Distribuciones Andina", "precio": 105000, "unidad": "Paquete", "pendiente": "precio aproximado (X mil)"}, {"codigo": "ABA-0089", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Alianza Nueva Granada", "precio": 112591, "unidad": "Paquete", "pendiente": ""}, {"codigo": "PAP-0090", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Importadora San Martín", "precio": 120510, "unidad": "Unidad", "pendiente": ""}, {"codigo": "ABA-0009", "nombre": "Atún Premium", "categoria": "Abarrotes", "proveedor": "Alianza Nueva Granada", "precio": 78071, "unidad": "Unidad", "pendiente": "precio en conflicto entre líneas 10 y 97: 73071 vs 78071"}, {"codigo": "MIS-0027", "nombre": "Vela aromática Mediano", "categoria": "Miscelánea", "proveedor": "Soluciones del Norte", "precio": 22613, "unidad": "Unidad", "pendiente": "precio en conflicto entre líneas 28 y 98: 17613 vs 22613"}, {"codigo": "PAP-0055", "nombre": "Resma de papel Mini", "categoria": "Papelería", "proveedor": "Soluciones del Norte", "precio": 46345, "unidad": "Unidad", "pendiente": "precio en conflicto entre líneas 56 y 99: 41345 vs 46345"}, {"codigo": "—", "nombre": "Producto sin código", "categoria": "Ferretería", "proveedor": "Productos La Montaña", "precio": 35000, "unidad": "Unidad", "pendiente": "código faltante"}, {"codigo": "PAP-0099", "nombre": "—", "categoria": "Papelería", "proveedor": "Papelería Central", "precio": 12500, "unidad": "Unidad", "pendiente": "id_proveedor faltante; nombre faltante"}];
+
+const fmt = n => "$" + Math.round(n).toLocaleString("es-CO");
+const gray = {"borderColor": "#cbd5e1", "borderWidth": 1};
+const baseOpts = (rotate=false) => ({
+  indexAxis: rotate ? "y" : "x",
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    legend: {labels: {usePointStyle: true, boxWidth: 8}},
+    tooltip: {
+      callbacks: {
+        label: ctx => {
+          if (ctx.dataset.money) return " " + fmt(ctx.parsed[rotate ? "x" : "y"]);
+          return " " + ctx.parsed[rotate ? "x" : "y"] + " producto(s)";
+        }
+      }
+    }
+  },
+  scales: {
+    x: rotate ? {grid:{display:false}, ticks:{callback:v=>fmt(v)}} : {grid:{display:false}},
+    y: rotate ? {grid:{display:false}} : {grid:{color:"#eef2f7"}, ticks:{callback:v=>fmt(v)}}
+  }
+});
+
+new Chart(document.getElementById("chCount"), {
+  type:"bar",
+  data:{labels:DATA.cats, datasets:[{label:"Productos por categoría", data:DATA.cat_count, backgroundColor:DATA.cat_color, borderRadius:8, ...gray}]},
+  options:baseOpts()
+});
+
+new Chart(document.getElementById("chSum"), {
+  type:"bar",
+  data:{labels:DATA.cats, datasets:[{label:"Valor total del estante", money:true, data:DATA.cat_sum, backgroundColor:DATA.cat_color, borderRadius:8, ...gray}]},
+  options:baseOpts()
+});
+
+new Chart(document.getElementById("chAvg"), {
+  type:"bar",
+  data:{labels:DATA.cats, datasets:[{label:"Precio promedio", money:true, data:DATA.cat_avg, backgroundColor:DATA.cat_color, borderRadius:8, ...gray}]},
+  options:baseOpts()
+});
+
+new Chart(document.getElementById("chProd"), {
+  type:"bar",
+  data:{labels:DATA.prods, datasets:[
+    {label:"Precio más bajo", money:true, data:DATA.prod_min, backgroundColor:"#94a3b8", borderRadius:6, ...gray},
+    {label:"Precio promedio", money:true, data:DATA.prod_avg, backgroundColor:"#6366f1", borderRadius:6, ...gray},
+    {label:"Precio más alto", money:true, data:DATA.prod_max, backgroundColor:"#4338ca", borderRadius:6, ...gray}
+  ]},
+  options:baseOpts(true)
+});
+
+new Chart(document.getElementById("chPend"), {
+  type:"bar",
+  data:{labels:DATA.cats, datasets:[{label:"Filas con dudas por categoría", data:DATA.cat_pend, backgroundColor:"#f59e0b", borderRadius:8, ...gray}]},
+  options:{...baseOpts(), scales:{... {
+    x:{grid:{display:false}},
+    y:{grid:{color:"#eef2f7"}, beginAtZero:true, ticks:{stepSize:1}}
+  }}}
+});
+
+document.getElementById("k-productos").textContent = DATA.kpis.productos.toLocaleString("es-CO");
+document.getElementById("k-valor").textContent = fmt(DATA.kpis.valor_total);
+document.getElementById("k-precio").textContent = fmt(DATA.kpis.precio_promedio);
+document.getElementById("k-revision").textContent = DATA.kpis.revision;
+
+const tb = document.getElementById("tbody");
+for (const r of TABLE) {
+  const tr = document.createElement("tr");
+  if (r.pendiente) tr.className = "rev";
+  tr.innerHTML =
+    "<td class='mono'>" + r.codigo + "</td>" +
+    "<td>" + r.nombre + "</td>" +
+    "<td>" + r.categoria + "</td>" +
+    "<td>" + r.proveedor + "</td>" +
+    "<td class='num'>" + (r.precio === null ? "—" : fmt(r.precio)) + "</td>" +
+    "<td>" + r.unidad + "</td>" +
+    "<td>" + (r.pendiente || "✓ en orden") + "</td>";
+  tb.appendChild(tr);
+}
+</script>
+</body>
+</html>

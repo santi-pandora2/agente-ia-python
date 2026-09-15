@@ -1,0 +1,96 @@
+codigo,nombre,categoria,id_proveedor,proveedor,precio_venta,unidad,pendiente_revision
+FER-0001,Martillo Clásico,Ferretería,PRV-010,Alianza Nueva Granada,9719,Unidad,
+MIS-0002,Vela aromática Mediano,Miscelánea,PRV-019,Importadora San Martín,17638,Unidad,
+PAN-0003,Galleta de avena Grande,Panadería,PRV-028,Soluciones del Norte,25557,Unidad,
+ABA-0004,Atún Premium,Abarrotes,PRV-001,Distribuciones Andina,33476,Paquete,
+PAP-0005,Resma de papel Mini,Papelería,PRV-010,Alianza Nueva Granada,41395,Paquete,
+FER-0006,Martillo Clásico,Ferretería,PRV-019,Importadora San Martín,49314,Unidad,
+MIS-0007,Vela aromática Mediano,Miscelánea,PRV-028,Soluciones del Norte,57233,Unidad,
+PAN-0008,Galleta de avena Grande,Panadería,PRV-001,Distribuciones Andina,65152,Unidad,
+ABA-0009,Atún Premium,Abarrotes,PRV-010,Alianza Nueva Granada,73071,Unidad,
+PAP-0010,Resma de papel Mini,Papelería,PRV-019,Importadora San Martín,80990,Paquete,
+FER-0011,Martillo Clásico,Ferretería,PRV-028,Soluciones del Norte,88909,Paquete,
+MIS-0012,Vela aromática Mediano,Miscelánea,PRV-001,Distribuciones Andina,96828,Unidad,
+PAN-0013,Galleta de avena Grande,Panadería,PRV-010,Alianza Nueva Granada,104747,Unidad,
+ABA-0014,Atún Premium,Abarrotes,PRV-019,Importadora San Martín,112666,Unidad,
+PAP-0015,Resma de papel Mini,Papelería,PRV-028,Soluciones del Norte,120585,Unidad,
+FER-0016,Martillo Clásico,Ferretería,PRV-001,Distribuciones Andina,128504,Paquete,
+MIS-0017,Vela aromática Mediano,Miscelánea,,Alianza Nueva Granada,136423,Paquete,id_proveedor faltante
+PAN-0018,Galleta de avena Grande,Panadería,PRV-019,Importadora San Martín,144342,Unidad,
+ABA-0019,Atún Premium,Abarrotes,PRV-028,Soluciones del Norte,152261,Unidad,
+PAP-0020,Resma de papel Mini,Papelería,PRV-001,Distribuciones Andina,160180,Unidad,
+FER-0021,Martillo Clásico,Ferretería,PRV-010,Alianza Nueva Granada,168099,Unidad,
+MIS-0022,Vela aromática Mediano,Miscelánea,PRV-019,Importadora San Martín,176000,Paquete,precio aproximado (X mil)
+PAN-0023,Galleta de avena Grande,Panadería,PRV-028,Soluciones del Norte,183937,Paquete,
+ABA-0024,Atún Premium,Abarrotes,PRV-001,Distribuciones Andina,191856,Unidad,
+PAP-0025,Resma de papel Mini,Papelería,PRV-010,Alianza Nueva Granada,199775,Unidad,
+FER-0026,Martillo Clásico,Ferretería,PRV-019,Importadora San Martín,9694,Unidad,
+MIS-0027,Vela aromática Mediano,Miscelánea,PRV-028,Soluciones del Norte,17613,Unidad,
+PAN-0028,Galleta de avena Grande,Panadería,PRV-001,Distribuciones Andina,25532,Paquete,
+ABA-0029,Atún Premium,Abarrotes,PRV-010,Alianza Nueva Granada,33451,Paquete,
+PAP-0030,Resma de papel Mini,Papelería,PRV-019,Importadora San Martín,41370,Unidad,
+FER-0031,Martillo Clásico,Ferretería,PRV-028,Soluciones del Norte,,Unidad,precio faltante
+MIS-0032,Vela aromática Mediano,Miscelánea,PRV-001,Distribuciones Andina,57208,Unidad,
+PAN-0033,Galleta de avena Grande,Panadería,PRV-010,Alianza Nueva Granada,65127,Unidad,
+ABA-0034,Atún Premium,Abarrotes,,Importadora San Martín,73046,Paquete,id_proveedor faltante
+PAP-0035,Resma de papel Mini,Papelería,PRV-028,Soluciones del Norte,80965,Paquete,
+FER-0036,Martillo Clásico,Ferretería,PRV-001,Distribuciones Andina,88884,Unidad,
+MIS-0037,Vela aromática Mediano,Miscelánea,PRV-010,Alianza Nueva Granada,96803,Unidad,
+PAN-0038,Galleta de avena Grande,Panadería,PRV-019,Importadora San Martín,104722,Unidad,
+ABA-0039,Atún Premium,Abarrotes,PRV-028,Soluciones del Norte,112641,Unidad,
+PAP-0040,Resma de papel Mini,Papelería,PRV-001,Distribuciones Andina,120560,Paquete,
+FER-0041,Martillo Clásico,Ferretería,PRV-010,Alianza Nueva Granada,128479,Paquete,
+MIS-0042,Vela aromática Mediano,Miscelánea,PRV-019,Importadora San Martín,136398,Unidad,
+PAN-0043,Galleta de avena Grande,Panadería,PRV-028,Soluciones del Norte,144317,Unidad,
+ABA-0044,Atún Premium,Abarrotes,PRV-001,Distribuciones Andina,152000,Unidad,precio aproximado (X mil)
+PAP-0045,Resma de papel Mini,Papelería,PRV-010,Alianza Nueva Granada,160155,Unidad,
+FER-0046,Martillo Clásico,Ferretería,PRV-019,Importadora San Martín,168074,Paquete,
+MIS-0047,Vela aromática Mediano,Miscelánea,PRV-028,Soluciones del Norte,,Paquete,precio faltante
+PAN-0048,Galleta de avena Grande,Panadería,PRV-001,Distribuciones Andina,183912,Unidad,
+ABA-0049,Atún Premium,Abarrotes,PRV-010,Alianza Nueva Granada,191831,Unidad,
+PAP-0050,Resma de papel Mini,Papelería,PRV-019,Importadora San Martín,199750,Unidad,
+FER-0051,Martillo Clásico,Ferretería,,Soluciones del Norte,9669,Unidad,id_proveedor faltante
+MIS-0052,Vela aromática Mediano,Miscelánea,PRV-001,Distribuciones Andina,17588,Paquete,
+PAN-0053,Galleta de avena Grande,Panadería,PRV-010,Alianza Nueva Granada,25507,Paquete,
+ABA-0054,Atún Premium,Abarrotes,PRV-019,Importadora San Martín,33426,Unidad,
+PAP-0055,Resma de papel Mini,Papelería,PRV-028,Soluciones del Norte,41345,Unidad,
+FER-0056,Martillo Clásico,Ferretería,PRV-001,Distribuciones Andina,49264,Unidad,
+MIS-0057,Vela aromática Mediano,Miscelánea,PRV-010,Alianza Nueva Granada,57183,Unidad,
+PAN-0058,Galleta de avena Grande,Panadería,PRV-019,Importadora San Martín,65102,Paquete,
+ABA-0059,Atún Premium,Abarrotes,PRV-028,Soluciones del Norte,73021,Paquete,
+PAP-0060,Resma de papel Mini,Papelería,PRV-001,Distribuciones Andina,80940,Unidad,
+FER-0061,Martillo Clásico,Ferretería,PRV-010,Alianza Nueva Granada,88859,Unidad,
+MIS-0062,Vela aromática Mediano,Miscelánea,PRV-019,Importadora San Martín,,Unidad,precio faltante
+PAN-0063,Galleta de avena Grande,Panadería,PRV-028,Soluciones del Norte,104697,Unidad,
+ABA-0064,Atún Premium,Abarrotes,PRV-001,Distribuciones Andina,112616,Paquete,
+PAP-0065,Resma de papel Mini,Papelería,PRV-010,Alianza Nueva Granada,120535,Paquete,
+FER-0066,Martillo Clásico,Ferretería,PRV-019,Importadora San Martín,128000,Unidad,precio aproximado (X mil)
+MIS-0067,Vela aromática Mediano,Miscelánea,PRV-028,Soluciones del Norte,136373,Unidad,
+PAN-0068,Galleta de avena Grande,Panadería,,Distribuciones Andina,144292,Unidad,id_proveedor faltante
+ABA-0069,Atún Premium,Abarrotes,PRV-010,Alianza Nueva Granada,152211,Unidad,
+PAP-0070,Resma de papel Mini,Papelería,PRV-019,Importadora San Martín,160130,Paquete,
+FER-0071,Martillo Clásico,Ferretería,PRV-028,Soluciones del Norte,168049,Paquete,
+MIS-0072,Vela aromática Mediano,Miscelánea,PRV-001,Distribuciones Andina,175968,Unidad,
+PAN-0073,Galleta de avena Grande,Panadería,PRV-010,Alianza Nueva Granada,183887,Unidad,
+ABA-0074,Atún Premium,Abarrotes,PRV-019,Importadora San Martín,191806,Unidad,
+PAP-0075,Resma de papel Mini,Papelería,PRV-028,Soluciones del Norte,199725,Unidad,
+FER-0076,Martillo Clásico,Ferretería,PRV-001,Distribuciones Andina,9644,Paquete,
+MIS-0077,Vela aromática Mediano,Miscelánea,PRV-010,Alianza Nueva Granada,17563,Paquete,
+PAN-0078,Galleta de avena Grande,Panadería,PRV-019,Importadora San Martín,25482,Unidad,
+ABA-0079,Atún Premium,Abarrotes,PRV-028,Soluciones del Norte,33401,Unidad,
+PAP-0080,Resma de papel Mini,Papelería,PRV-001,Distribuciones Andina,41320,Unidad,
+FER-0081,Martillo Clásico,Ferretería,PRV-010,Alianza Nueva Granada,49239,Unidad,
+MIS-0082,Vela aromática Mediano,Miscelánea,PRV-019,Importadora San Martín,57158,Paquete,
+PAN-0083,Galleta de avena Grande,Panadería,PRV-028,Soluciones del Norte,65077,Paquete,
+ABA-0084,Atún Premium,Abarrotes,PRV-001,Distribuciones Andina,72996,Unidad,
+PAP-0085,Resma de papel Mini,Papelería,,Alianza Nueva Granada,80915,Unidad,id_proveedor faltante
+FER-0086,Martillo Clásico,Ferretería,PRV-019,Importadora San Martín,88834,Unidad,
+MIS-0087,Vela aromática Mediano,Miscelánea,PRV-028,Soluciones del Norte,96753,Unidad,
+PAN-0088,Galleta de avena Grande,Panadería,PRV-001,Distribuciones Andina,105000,Paquete,precio aproximado (X mil)
+ABA-0089,Atún Premium,Abarrotes,PRV-010,Alianza Nueva Granada,112591,Paquete,
+PAP-0090,Resma de papel Mini,Papelería,PRV-019,Importadora San Martín,120510,Unidad,
+ABA-0009,Atún Premium,Abarrotes,PRV-010,Alianza Nueva Granada,78071,Unidad,precio en conflicto entre líneas 10 y 97: 73071 vs 78071
+MIS-0027,Vela aromática Mediano,Miscelánea,PRV-028,Soluciones del Norte,22613,Unidad,precio en conflicto entre líneas 28 y 98: 17613 vs 22613
+PAP-0055,Resma de papel Mini,Papelería,PRV-028,Soluciones del Norte,46345,Unidad,precio en conflicto entre líneas 56 y 99: 41345 vs 46345
+,Producto sin código,Ferretería,PRV-007,Productos La Montaña,35000,Unidad,código faltante
+PAP-0099,,Papelería,,Papelería Central,12500,Unidad,id_proveedor faltante; nombre faltante
