@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": {
+    "analyze-data-quality": {
+      "source": "openai/role-specific-plugins",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "plugins/data-analytics/skills/analyze-data-quality/SKILL.md",
+      "computedHash": "8c645c0d1c962c806c023e638f770974112fec6aca16e2438cef69db37e4d8cd"
+    }
+  }
+}

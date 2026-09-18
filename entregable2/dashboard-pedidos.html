@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Pedidos · Hogar Colombia</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--tx:#f1f5f9;--mut:#94a3b8;--green:#22c55e;--amber:#f59e0b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--tx);padding:24px}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:26px;font-weight:700}
+  header p{color:var(--mut);font-size:13px;margin:6px 0 22px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:26px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .card .k{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+  .card .v{font-size:26px;font-weight:800;margin-top:6px}
+  .card .s{font-size:12px;color:var(--mut);margin-top:4px}
+  .green{color:var(--green)} .amber{color:var(--amber)} .red{color:#f87171}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .panel h2{font-size:15px;font-weight:600;margin-bottom:12px}
+  .box{position:relative;height:300px}
+  .tag{display:inline-block;background:#064e3b;color:#6ee7b7;font-size:11px;border-radius:20px;padding:3px 10px;margin-left:8px;vertical-align:middle}
+  .chart-row{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px}
+  footer{margin-top:26px;color:var(--mut);font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Tablero de Pedidos <span class="tag">Hogar Colombia</span></h1>
+    <p>Analítica de conversaciones de WhatsApp · fuente: whatsapp-pedidos-hogar-colombia-200.json</p>
+  </header>
+
+  <div class="cards">
+    <div class="card"><div class="k">Pedidos Total</div><div class="v">151</div><div class="s">órdenes confirmadas</div></div>
+    <div class="card"><div class="k green">Entregados</div><div class="v green">24</div><div class="s">confirmados y enviados</div></div>
+    <div class="card"><div class="k amber">Pendientes</div><div class="v amber">127</div><div class="s">confirmados sin despachar</div></div>
+    <div class="card"><div class="k red">Sin Pedido</div><div class="v red">49</div><div class="s">consultas / canceladas</div></div>
+    <div class="card"><div class="k green">Ingresos</div><div class="v green">$39.736.000</div><div class="s">facturados (total)</div></div>
+    <div class="card"><div class="k">Ticket Promedio</div><div class="v">$263.152</div><div class="s">total / pedido</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel"><h2>Pedidos por estado</h2><div class="box"><canvas id="cEstado"></canvas></div></div>
+    <div class="panel"><h2>Métodos de pago</h2><div class="box"><canvas id="cMetodo"></canvas></div></div>
+    <div class="panel"><h2>Pedidos por ciudad</h2><div class="box"><canvas id="cCiudad"></canvas></div></div>
+    <div class="panel"><h2>Pedidos por barrio</h2><div class="box"><canvas id="cBarrio"></canvas></div></div>
+  </div>
+
+  <div class="chart-row">
+    <div class="panel"><h2>Top 10 productos más vendidos (unidades)</h2><div class="box"><canvas id="cProd"></canvas></div></div>
+    <div class="panel"><h2>Ingresos por ciudad (COP)</h2><div class="box"><canvas id="cIngCiudad"></canvas></div></div>
+  </div>
+
+  <footer>Generado a partir de conversaciones.csv · normalizado según la skill "Normalización de Pedidos de WhatsApp a Excel" (1NF/2NF/3NF)</footer>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+const CIUDAD = {"Barranquilla": 19, "Cali": 19, "Cartagena": 19, "Ibagué": 19, "Manizales": 19, "Medellín": 19, "Pereira": 19, "Santa Marta": 18};
+const BARRIO = [["El Prado", 19], ["La Pola", 19], ["Laureles", 19], ["Manga", 19], ["San Fernando", 19], ["Palermo", 19], ["Álamos", 19], ["Bavaria", 18]];
+const METODO = {"Nequi": 35, "Pago Contraentrega": 35, "Daviplata": 35, "Transferencia Bancaria": 34, "Sin definir": 12};
+const PROD = [["Cobija Térmica Doble Gris", 46], ["Protector de Colchón Doble", 45], ["Cortina Blackout 140x220 Gris", 39], ["Juego de Toallas Blancas x3", 39], ["Tapete de Baño Verde", 38], ["Cojín Decorativo Terracota", 38], ["Almohada Hotelera Firme", 37], ["Juego de Sábanas Doble Algodón", 35], ["Tapete de Baño Gris", 23], ["Almohada Hotelera Suave", 21]];
+const ING = [["Manizales", 5319000], ["Ibagué", 5260000], ["Cartagena", 5149000], ["Medellín", 5055000], ["Pereira", 4945000], ["Cali", 4777000], ["Santa Marta", 4766000], ["Barranquilla", 4465000]];
+
+function money(v){ return '$' + v.toLocaleString('es-CO', {maximumFractionDigits:0}); }
+function moneyShort(v){ return v >= 1e6 ? '$'+(v/1e6).toFixed(1)+'M' : (v >= 1e3 ? '$'+(v/1e3).toFixed(0)+'K' : '$'+v); }
+
+const DL = { font:{ weight:'bold', size:12 }, color:'#fff' };
+const dlabel = (extra) => Object.assign({}, DL, extra || {});
+
+new Chart(document.getElementById('cEstado'), {
+  type:'doughnut',
+  data:{ labels:['Entregados','Pendientes'],
+         datasets:[{ data:[24, 127], backgroundColor:['#22c55e','#f59e0b'], borderWidth:2, borderColor:'#1e293b' }] },
+  options:{ plugins:{ legend:{ labels:{ color:'#e2e8f0' } }, datalabels: dlabel({ color:'#0f172a', formatter:(v)=> v.toLocaleString('es-CO') }) } }
+});
+
+new Chart(document.getElementById('cMetodo'), {
+  type:'pie',
+  data:{ labels:Object.keys(METODO), datasets:[{ data:Object.values(METODO), backgroundColor:["#16a34a", "#0d9488", "#2563eb", "#f59e0b", "#db2777"], borderWidth:2, borderColor:'#1e293b' }] },
+  options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#e2e8f0' } },
+                      datalabels:{ display:(ctx)=> METODO[Object.keys(METODO)[ctx.dataIndex]] >= 4, ...dlabel({ color:'#0f172a', formatter:(v)=> v.toLocaleString('es-CO') }) } } }
+});
+
+new Chart(document.getElementById('cCiudad'), {
+  type:'pie',
+  data:{ labels:Object.keys(CIUDAD), datasets:[{ data:Object.values(CIUDAD), backgroundColor:["#16a34a", "#0d9488", "#2563eb", "#f59e0b", "#db2777", "#7c3aed", "#ea580c", "#0891b2"], borderWidth:2, borderColor:'#1e293b' }] },
+  options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#e2e8f0' } },
+                      datalabels:{ display:(ctx)=> Object.values(CIUDAD)[ctx.dataIndex] >= 9, ...dlabel({ color:'#0f172a', formatter:(v)=> v.toLocaleString('es-CO') }) } } }
+});
+
+new Chart(document.getElementById('cBarrio'), {
+  type:'bar',
+  data:{ labels:BARRIO.map(b=>b[0]), datasets:[{ label:'Pedidos', data:BARRIO.map(b=>b[1]), backgroundColor:'#0d9488', borderRadius:6 }] },
+  options:{ indexAxis:'y', plugins:{ legend:{ display:false },
+                       datalabels:{ anchor:'end', align:'end', ...dlabel({ color:'#67e8f9', formatter:(v)=> v.toLocaleString('es-CO')+' ped.' }) } },
+            scales:{ x:{ ticks:{color:'#94a3b8'}, grid:{color:'#334155'} }, y:{ ticks:{color:'#e2e8f0'}, grid:{display:false} } } }
+});
+
+new Chart(document.getElementById('cProd'), {
+  type:'bar',
+  data:{ labels:PROD.map(p=>p[0]), datasets:[{ label:'Unidades', data:PROD.map(p=>p[1]), backgroundColor:["#16a34a", "#0d9488", "#2563eb", "#f59e0b", "#db2777", "#7c3aed", "#ea580c", "#0891b2", "#4f46e5", "#84cc16"], borderRadius:6 }] },
+  options:{ indexAxis:'y', plugins:{ legend:{ display:false },
+                       datalabels:{ anchor:'end', align:'end', ...dlabel({ color:'#fcd34d', formatter:(v)=> v.toLocaleString('es-CO') }) } },
+            scales:{ x:{ ticks:{color:'#94a3b8'}, grid:{color:'#334155'} }, y:{ ticks:{color:'#e2e8f0'}, grid:{display:false} } } }
+});
+
+new Chart(document.getElementById('cIngCiudad'), {
+  type:'bar',
+  data:{ labels:ING.map(c=>c[0]), datasets:[{ label:'Ingresos', data:ING.map(c=>c[1]), backgroundColor:["#16a34a", "#0d9488", "#2563eb", "#f59e0b", "#db2777", "#7c3aed", "#ea580c", "#0891b2"], borderRadius:6 }] },
+  options:{ plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>money(c.raw) } },
+                       datalabels:{ anchor:'end', align:'end', ...dlabel({ color:'#86efac', formatter:(v)=> moneyShort(v) }) } },
+            scales:{ x:{ ticks:{color:'#94a3b8'}, grid:{color:'#334155'} },
+                     y:{ beginAtZero:true, ticks:{ color:'#94a3b8', callback:v=>moneyShort(v) }, grid:{color:'#334155'} } } }
+});
+</script>
+</body>
+</html>
