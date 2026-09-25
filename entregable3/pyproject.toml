@@ -1,0 +1,19 @@
+[project]
+name = "entregable3"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "santiago rojas rodríguez", email = "santiagorojas772@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "openpyxl>=3.1.5",
+]
+
+[project.scripts]
+entregable3 = "entregable3:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
