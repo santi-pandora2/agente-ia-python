@@ -11,9 +11,16 @@ dependencies = [
     "openpyxl>=3.1.5",
 ]
 
-[project.scripts]
-entregable3 = "entregable3:main"
+[dependency-groups]
+dev = ["pytest>=8.3"]
 
-[build-system]
-requires = ["uv_build>=0.12.19,<0.13.0"]
-build-backend = "uv_build"
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scripts"]
+# openpyxl deja abierto el ZipFile del .xlsm y Python lo reporta al recolectar.
+filterwarnings = ["ignore:Exception ignored in:pytest.PytestUnraisableExceptionWarning"]
+
+[tool.uv]
+# Proyecto sin paquete: el código vive en scripts/ y se ejecuta como script,
+# no se importa como librería. uv solo gestiona el entorno y las dependencias.
+package = false

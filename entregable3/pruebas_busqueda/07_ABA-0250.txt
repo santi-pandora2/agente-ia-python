@@ -1,0 +1,38 @@
+CASO 07  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto ABA-0250 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto ABA-0250?
+Comando   : uv run python scripts/consultar.py producto ABA-0250
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : ABA-0250
+  Nombre      : Jugo en caja Casa Real Especial
+  Categoria   : Abarrotes
+  Lote        : LT-2449372   (1 solo lote)
+  Vence       : 2028-04-06   (mas de 30 dias del corte -> VIGENTE)
+  Estado      : VIGENTE
+  Ubicacion   : D-22-02
+  Stock       : 2  (minimo 26 -> 24 unidades por debajo del minimo)
+  Proveedor   : Productos La Montaña ABA S.A.S. (PRV-052, Activo)
+  Observaciones del lote: Reponer existencias
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Abarrotes
+  [ ] la salida nombra el lote LT-2449372
+  [ ] la salida muestra la fecha 2028-04-06
+  [ ] la salida marca el estado VIGENTE
+  [ ] la salida da el stock 2 y deja ver que el minimo es 26, es decir
+      que el lote esta bajo el minimo
+  [ ] la salida no confunde "VIGENTE" con "VENCIDO": el producto no vence
+      pronto, lo que urge es reponer
+
+FAIL si
+  - falta cualquiera de los 6 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta presenta el lote como si cumpliera el minimo, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/07_ABA-0250.log   (generado 2026-09-28, PASS)

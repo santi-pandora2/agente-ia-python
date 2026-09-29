@@ -1,0 +1,37 @@
+PRUEBA DE BUSQUEDA  CASO 06  -  ABA-0220
+========================================================
+Ejecutada : 2026-09-28 20:34:40
+Comando   : uv run python scripts/consultar.py producto ABA-0220
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                                 
+------------  ------------------------------------------------------
+Codigo        ABA-0220                                              
+Nombre        Caldo concentrado Casa Real Especial                  
+Categoria     Abarrotes                                             
+Unidad        Unidad                                                
+Precio costo  COP 27.600                                            
+Precio venta  COP 40.500                                            
+Proveedor     Abastecimientos Los Alpes ABA S.A.S. (PRV-049, Activo)
+Ciudad        Cartagena                                             
+Contacto      Mauricio López / 6086908613                           
+Correo        mauricio.lopez@abastecimientoslos.co                  
+
+Lote        Ubicacion  Stock  Minimo  Estado   Vence       Ultimo movimiento  Observaciones                   
+----------  ---------  -----  ------  -------  ----------  -----------------  --------------------------------
+LT-2602617  A-02-01    8      26      VENCIDO  2025-04-28  2026-08-04         Separar de inventario disponible
+
+Total               Valor a costo
+------------------  -------------
+1 lote, 8 unidades  COP 220.800  
+--------------------------------------------------------
+EVALUACION  (criterios de 06_ABA-0220.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Abarrotes
+  [OK] nombra el lote LT-2602617
+  [OK] muestra la fecha 2025-04-28
+  [OK] marca el estado VENCIDO
+  [OK] da el stock 8 con el minimo 26 a la vista (bajo el minimo, faltan 18)
+  [OK] la fecha y el lote coinciden con los verificados
+RESULTADO: PASS  (5/5 criterios)

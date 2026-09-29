@@ -1,0 +1,27 @@
+Carpeta de logs de las pruebas de busqueda
+=========================================
+Por aqui queda la salida real de cada caso cuando se ejecuten:
+
+  01_ABA-0218.log
+  02_MIS-0212.log
+  03_ABA-0134.log
+  04_MIS-0041.log
+  05_MIS-0035.log
+  06_ABA-0220.log
+  07_ABA-0250.log
+  08_ABA-0187.log
+  09_MIS-0052.log
+
+Ademas, 10_verificacion.log con la corrida completa del entregable: uv sync,
+la suite de tests, el checklist de datos, una consulta de control y el
+resumen de los 9 casos; y 11_repl.log con una sesion real de la consola del
+asistente (uv run python -m src.app), comando por comando, incluyendo tres
+entradas erroneas que avisan sin tumbar la sesion.
+
+Los 9 casos se ejecutaron el 2026-09-28 20:34. Cada .log tiene la salida de
+
+  uv run python scripts/consultar.py producto <CODIGO>
+
+y al final el bloque de evaluacion con la linea RESULTADO: PASS o FAIL.
+Resumen: 9 PASS, 0 FAIL. Para reejecutar uno, basta con repetir el comando
+sobre el log y volver a pegar la salida y el veredicto.

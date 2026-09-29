@@ -48,6 +48,7 @@ def convertir(origen: Path, destino: Path) -> dict[str, int]:
     requeridas = {"Productos", "Proveedores", "Inventario"}
     faltantes = requeridas.difference(libro.sheetnames)
     if faltantes:
+        libro.close()
         raise ValueError(f"Faltan hojas requeridas: {', '.join(sorted(faltantes))}")
 
     conteos = {"proveedores": 0, "productos": 0, "inventario": 0}

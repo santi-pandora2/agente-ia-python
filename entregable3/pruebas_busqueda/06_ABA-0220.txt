@@ -1,0 +1,36 @@
+CASO 06  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto ABA-0220 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto ABA-0220?
+Comando   : uv run python scripts/consultar.py producto ABA-0220
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : ABA-0220
+  Nombre      : Caldo concentrado Casa Real Especial
+  Categoria   : Abarrotes
+  Lote        : LT-2602617   (1 solo lote)
+  Vence       : 2025-04-28   (494 dias de atraso -> VENCIDO)
+  Estado      : VENCIDO
+  Ubicacion   : A-02-01
+  Stock       : 8  (minimo 26 -> 18 unidades por debajo del minimo)
+  Proveedor   : Abastecimientos Los Alpes ABA S.A.S. (PRV-049, Activo)
+  Observaciones del lote: Separar de inventario disponible
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Abarrotes
+  [ ] la salida nombra el lote LT-2602617
+  [ ] la salida muestra la fecha 2025-04-28
+  [ ] la salida marca el estado VENCIDO
+  [ ] la salida da el stock 8 y deja ver que el minimo es 26, es decir
+      que el lote esta bajo el minimo
+
+FAIL si
+  - falta cualquiera de los 5 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta presenta el lote como si cumpliera el minimo, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/06_ABA-0220.log   (generado 2026-09-28, PASS)

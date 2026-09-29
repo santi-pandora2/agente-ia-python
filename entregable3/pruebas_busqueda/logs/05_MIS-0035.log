@@ -1,0 +1,37 @@
+PRUEBA DE BUSQUEDA  CASO 05  -  MIS-0035
+========================================================
+Ejecutada : 2026-09-28 20:34:40
+Comando   : uv run python scripts/consultar.py producto MIS-0035
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                             
+------------  --------------------------------------------------
+Codigo        MIS-0035                                          
+Nombre        Sombrilla plegable Útil Familiar                  
+Categoria     Miscelánea                                        
+Unidad        Unidad                                            
+Precio costo  COP 36.100                                        
+Precio venta  COP 54.700                                        
+Proveedor     Distribuciones Andina MIS S.A.S. (PRV-016, Activo)
+Ciudad        Pereira                                           
+Contacto      Paola Martínez / 6048336844                       
+Correo        paola.martinez@distribucionesandina.co            
+
+Lote        Ubicacion  Stock  Minimo  Estado   Vence       Ultimo movimiento  Observaciones                   
+----------  ---------  -----  ------  -------  ----------  -----------------  --------------------------------
+LT-2633207  E-16-01    7      22      VENCIDO  2025-03-30  2026-07-30         Separar de inventario disponible
+
+Total               Valor a costo
+------------------  -------------
+1 lote, 7 unidades  COP 252.700  
+--------------------------------------------------------
+EVALUACION  (criterios de 05_MIS-0035.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Miscelanea
+  [OK] nombra el lote LT-2633207
+  [OK] muestra la fecha 2025-03-30
+  [OK] marca el estado VENCIDO
+  [OK] da el stock 7 con el minimo 22 a la vista (bajo el minimo, faltan 15)
+  [OK] la fecha y el lote coinciden con los verificados
+RESULTADO: PASS  (5/5 criterios)

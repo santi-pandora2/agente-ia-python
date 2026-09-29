@@ -1,0 +1,37 @@
+PRUEBA DE BUSQUEDA  CASO 03  -  ABA-0134
+========================================================
+Ejecutada : 2026-09-28 20:34:40
+Comando   : uv run python scripts/consultar.py producto ABA-0134
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                            
+------------  -------------------------------------------------
+Codigo        ABA-0134                                         
+Nombre        Café molido Andes Grande                         
+Categoria     Abarrotes                                        
+Unidad        Unidad                                           
+Precio costo  COP 41.800                                       
+Precio venta  COP 59.600                                       
+Proveedor     Soluciones Del Norte ABA S.A.S. (PRV-053, Activo)
+Ciudad        Cali                                             
+Contacto      Felipe García / 6055265535                       
+Correo        felipe.garcia@solucionesdel.co                   
+
+Lote        Ubicacion  Stock  Minimo  Estado      Vence       Ultimo movimiento  Observaciones     
+----------  ---------  -----  ------  ----------  ----------  -----------------  ------------------
+LT-2670956  A-18-05    165    26      POR VENCER  2026-09-24  2026-06-02         Priorizar rotación
+
+Total                 Valor a costo
+--------------------  -------------
+1 lote, 165 unidades  COP 6.897.000
+--------------------------------------------------------
+EVALUACION  (criterios de 03_ABA-0134.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Abarrotes
+  [OK] nombra el lote LT-2670956
+  [OK] muestra la fecha 2026-09-24
+  [OK] marca el estado POR VENCER
+  [OK] da el stock 165
+  [OK] la fecha y el lote coinciden con los verificados
+RESULTADO: PASS  (5/5 criterios)

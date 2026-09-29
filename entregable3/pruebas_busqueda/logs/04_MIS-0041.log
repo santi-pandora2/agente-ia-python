@@ -1,0 +1,42 @@
+PRUEBA DE BUSQUEDA  CASO 04  -  MIS-0041
+========================================================
+Ejecutada : 2026-09-28 20:34:40
+Comando   : uv run python scripts/consultar.py producto MIS-0041
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                                
+------------  -----------------------------------------------------
+Codigo        MIS-0041                                             
+Nombre        Cepillo de ropa Práctika Mini                        
+Categoria     Miscelánea                                           
+Unidad        Unidad                                               
+Precio costo  COP 13.900                                           
+Precio venta  COP 19.600                                           
+Proveedor     Mayorista Del Valle MIS S.A.S. (PRV-020, En revisión)
+Ciudad        Villavicencio                                        
+Contacto      Camila Martínez / 6015887586                         
+Correo        camila.martinez@mayoristadel.co                      
+
+Lote        Ubicacion  Stock  Minimo  Estado   Vence       Ultimo movimiento  Observaciones                   
+----------  ---------  -----  ------  -------  ----------  -----------------  --------------------------------
+LT-2401144  B-01-01    145    21      VENCIDO  2025-03-23  2026-08-31         Separar de inventario disponible
+
+Total                 Valor a costo
+--------------------  -------------
+1 lote, 145 unidades  COP 2.015.500
+--------------------------------------------------------
+EVALUACION  (criterios de 04_MIS-0041.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Miscelanea
+  [OK] nombra el lote LT-2401144
+  [OK] muestra la fecha 2025-03-23
+  [OK] marca el estado VENCIDO
+  [OK] da el stock 145
+  [OK] muestra que PRV-020 esta "En revision"
+       NOTA: igual que en el caso 01, la advertencia de "no despachar" no la
+       imprime `producto`, solo `proveedor`.
+  [OK] no ofrece el lote como disponible: trae "Separar de inventario
+       disponible" y el estado VENCIDO
+  [OK] la fecha y el lote coinciden con los verificados
+RESULTADO: PASS  (7/7 criterios)

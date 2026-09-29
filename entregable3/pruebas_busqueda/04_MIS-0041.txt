@@ -1,0 +1,38 @@
+CASO 04  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto MIS-0041 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto MIS-0041?
+Comando   : uv run python scripts/consultar.py producto MIS-0041
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : MIS-0041
+  Nombre      : Cepillo de ropa Práctika Mini
+  Categoria   : Miscelánea
+  Lote        : LT-2401144   (1 solo lote)
+  Vence       : 2025-03-23   (530 dias de atraso -> VENCIDO)
+  Estado      : VENCIDO
+  Ubicacion   : B-01-01
+  Stock       : 145  (minimo 21)
+  Proveedor   : Mayorista Del Valle MIS S.A.S. (PRV-020, En revisión)
+  Observaciones del lote: Separar de inventario disponible
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Miscelánea
+  [ ] la salida nombra el lote LT-2401144
+  [ ] la salida muestra la fecha 2025-03-23
+  [ ] la salida marca el estado VENCIDO
+  [ ] la salida da el stock 145
+  [ ] la salida advierte que PRV-020 esta En revisión y que no esta
+      habilitado para despachar   (regla 3 de AGENTS.md)
+  [ ] la respuesta no ofrece el lote como disponible para la venta
+
+FAIL si
+  - falta cualquiera de los 7 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta presenta el proveedor como Activo, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/04_MIS-0041.log   (generado 2026-09-28, PASS)

@@ -1,0 +1,37 @@
+CASO 01  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto ABA-0218 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto ABA-0218?
+Comando   : uv run python scripts/consultar.py producto ABA-0218
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : ABA-0218
+  Nombre      : Caldo concentrado Rico Día Premium
+  Categoria   : Abarrotes
+  Lote        : LT-2430339   (1 solo lote)
+  Vence       : 2026-10-02   (a 28 dias del corte -> POR VENCER)
+  Estado      : POR VENCER
+  Ubicacion   : D-14-06
+  Stock       : 73  (minimo 22)
+  Proveedor   : Bodega El Dorado ABA S.A.S. (PRV-058, En revisión)
+  Observaciones del lote: Priorizar rotación
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Abarrotes
+  [ ] la salida nombra el lote LT-2430339
+  [ ] la salida muestra la fecha 2026-10-02
+  [ ] la salida marca el estado POR VENCER
+  [ ] la salida da el stock 73
+  [ ] la salida advierte que PRV-058 esta En revisión y que no esta
+      habilitado para despachar   (regla 3 de AGENTS.md)
+
+FAIL si
+  - falta cualquiera de los 6 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta presenta el proveedor como Activo, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/01_ABA-0218.log   (generado 2026-09-28, PASS)

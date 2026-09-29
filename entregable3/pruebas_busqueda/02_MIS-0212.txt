@@ -1,0 +1,36 @@
+CASO 02  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto MIS-0212 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto MIS-0212?
+Comando   : uv run python scripts/consultar.py producto MIS-0212
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : MIS-0212
+  Nombre      : Reloj de pared HogarPlus Pequeño
+  Categoria   : Miscelánea
+  Lote        : LT-2592348   (1 solo lote)
+  Vence       : 2026-09-08   (a 4 dias del corte -> POR VENCER)
+  Estado      : POR VENCER
+  Ubicacion   : D-21-01
+  Stock       : 11  (minimo 13 -> 2 unidades por debajo del minimo)
+  Proveedor   : Alianza Nueva Granada MIS S.A.S. (PRV-025, Activo)
+  Observaciones del lote: Priorizar rotación
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Miscelánea
+  [ ] la salida nombra el lote LT-2592348
+  [ ] la salida muestra la fecha 2026-09-08
+  [ ] la salida marca el estado POR VENCER
+  [ ] la salida da el stock 11 y deja ver que el minimo es 13, es decir
+      que el lote esta bajo el minimo
+
+FAIL si
+  - falta cualquiera de los 5 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta presenta el lote como si cumpliera el minimo, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/02_MIS-0212.log   (generado 2026-09-28, PASS)

@@ -1,0 +1,35 @@
+CASO NN  -  ESTADO: PENDIENTE (no ejecutado)
+======================================================================
+Objetivo  : Localizar el producto <CODIGO> y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto <CODIGO>?
+Comando   : uv run python scripts/consultar.py producto <CODIGO>
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : <CODIGO>
+  Nombre      : <nombre>
+  Categoria   : <categoria>
+  Lote        : <lote>   (1 lote)
+  Vence       : <AAAA-MM-DD>
+  Estado      : <VENCIDO | POR VENCER | VIGENTE>
+  Ubicacion   : <ubicacion>
+  Stock       : <stock>  (minimo <minimo>)
+  Proveedor   : <razon social> (<PRV-NNN>, <Activo | En revision>)
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria <categoria>
+  [ ] la salida nombra el lote <lote>
+  [ ] la salida muestra la fecha <AAAA-MM-DD>
+  [ ] la salida marca el estado <estado>
+  [ ] la salida da el stock <stock>
+
+FAIL si
+  - falta cualquiera de los 5 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/NN_<CODIGO>.log   (aun no generado)
+Observaciones del caso (opcional): <criterio extra, p.ej. advertir proveedor
+En revision, o marcar stock bajo el minimo>

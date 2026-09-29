@@ -1,0 +1,37 @@
+PRUEBA DE BUSQUEDA  CASO 02  -  MIS-0212
+========================================================
+Ejecutada : 2026-09-28 20:34:39
+Comando   : uv run python scripts/consultar.py producto MIS-0212
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                             
+------------  --------------------------------------------------
+Codigo        MIS-0212                                          
+Nombre        Reloj de pared HogarPlus Pequeño                  
+Categoria     Miscelánea                                        
+Unidad        Unidad                                            
+Precio costo  COP 10.400                                        
+Precio venta  COP 16.200                                        
+Proveedor     Alianza Nueva Granada MIS S.A.S. (PRV-025, Activo)
+Ciudad        Bucaramanga                                       
+Contacto      Sergio Martínez / 6074434662                      
+Correo        sergio.martinez@alianzanueva.co                   
+
+Lote        Ubicacion  Stock  Minimo  Estado      Vence       Ultimo movimiento  Observaciones     
+----------  ---------  -----  ------  ----------  ----------  -----------------  ------------------
+LT-2592348  D-21-01    11     13      POR VENCER  2026-09-08  2026-08-23         Priorizar rotación
+
+Total                Valor a costo
+-------------------  -------------
+1 lote, 11 unidades  COP 114.400  
+--------------------------------------------------------
+EVALUACION  (criterios de 02_MIS-0212.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Miscelanea
+  [OK] nombra el lote LT-2592348
+  [OK] muestra la fecha 2026-09-08
+  [OK] marca el estado POR VENCER
+  [OK] da el stock 11 con el minimo 13 a la vista (bajo el minimo, faltan 2)
+  [OK] la fecha y el lote coinciden con los verificados
+RESULTADO: PASS  (5/5 criterios)

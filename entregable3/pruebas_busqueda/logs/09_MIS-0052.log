@@ -1,0 +1,41 @@
+PRUEBA DE BUSQUEDA  CASO 09  -  MIS-0052
+========================================================
+Ejecutada : 2026-09-28 20:34:41
+Comando   : uv run python scripts/consultar.py producto MIS-0052
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                         
+------------  ----------------------------------------------
+Codigo        MIS-0052                                      
+Nombre        Gancho adhesivo HogarPlus Pequeño             
+Categoria     Miscelánea                                    
+Unidad        Unidad                                        
+Precio costo  COP 36.300                                    
+Precio venta  COP 46.200                                    
+Proveedor     Central El Puente MIS S.A.S. (PRV-024, Activo)
+Ciudad        Barranquilla                                  
+Contacto      Natalia Martínez / 6032908131                 
+Correo        natalia.martinez@centralel.co                 
+
+Lote        Ubicacion  Stock  Minimo  Estado   Vence       Ultimo movimiento  Observaciones
+----------  ---------  -----  ------  -------  ----------  -----------------  -------------
+LT-2694172  E-16-02    101    20      VIGENTE  2026-11-24  2026-07-09                      
+
+Total                 Valor a costo
+--------------------  -------------
+1 lote, 101 unidades  COP 3.666.300
+--------------------------------------------------------
+EVALUACION  (criterios de 09_MIS-0052.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Miscelanea
+  [OK] nombra el lote LT-2694172
+  [OK] muestra la fecha 2026-11-24
+  [OK] marca el estado VIGENTE
+  [OK] da el stock 101
+  [OK] no inventa observacion: la columna Observaciones sale vacia en la base
+       y en la salida
+  [OK] no dice que el lote "no tiene fecha de vencimiento": tiene 2026-11-24,
+       asi que no es NO APLICA
+  [OK] la fecha y el lote coinciden con los verificados
+RESULTADO: PASS  (7/7 criterios)

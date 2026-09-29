@@ -1,0 +1,36 @@
+CASO 05  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto MIS-0035 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto MIS-0035?
+Comando   : uv run python scripts/consultar.py producto MIS-0035
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : MIS-0035
+  Nombre      : Sombrilla plegable Útil Familiar
+  Categoria   : Miscelánea
+  Lote        : LT-2633207   (1 solo lote)
+  Vence       : 2025-03-30   (523 dias de atraso -> VENCIDO)
+  Estado      : VENCIDO
+  Ubicacion   : E-16-01
+  Stock       : 7  (minimo 22 -> 15 unidades por debajo del minimo)
+  Proveedor   : Distribuciones Andina MIS S.A.S. (PRV-016, Activo)
+  Observaciones del lote: Separar de inventario disponible
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Miscelánea
+  [ ] la salida nombra el lote LT-2633207
+  [ ] la salida muestra la fecha 2025-03-30
+  [ ] la salida marca el estado VENCIDO
+  [ ] la salida da el stock 7 y deja ver que el minimo es 22, es decir
+      que el lote esta bajo el minimo
+
+FAIL si
+  - falta cualquiera de los 5 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta presenta el lote como si cumpliera el minimo, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/05_MIS-0035.log   (generado 2026-09-28, PASS)

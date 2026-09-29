@@ -1,0 +1,159 @@
+SESION DE LA CONSOLA DEL ASISTENTE  (uv run python -m src.app)
+============================================================
+Ejecutada : 2026-09-28 21:05:49
+Comando   : uv run python -m src.app
+Corte     : 2026-09-04 (el del Excel)
+Nota      : transcripcion textual de una sesion real alimentada por stdin.
+
+-----------------------------------------------------------------
+ENTRADA: ayuda
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Comandos:
+  resumen                  Conteos, estados, categorias e indicadores
+  bajo-minimo [categoria]  Lotes con stock por debajo del minimo
+  vencidos [categoria]     Lotes ya vencidos a la fecha de corte
+  por-vencer [categoria]   Lotes que vencen en los proximos 30 dias
+  producto <codigo>        Ficha de un producto y sus lotes (ej. ABA-0218)
+  proveedor <id>           Ficha de un proveedor (ej. PRV-001)
+  hoy <AAAA-MM-DD>         Cambia la fecha de corte de esta sesion
+  corte                    Muestra la fecha de corte actual
+  ayuda                    Muestra esta lista de comandos
+  salir                    Cierra la sesion
+
+Los nombres de categoria van tal como estan en la base, con tilde: bajo-minimo "Ferretería".
+Sin argumentos opcionales, el comando trae todas las categorias.
+Ctrl+C o Ctrl+D tambien cierran la sesion. No se escribe nada: todas las consultas son de solo lectura.
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: corte
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Corte actual: 2026-09-04.
+
+Los estados salen de la columna 'estado' de la base, con corte 2026-09-04 (el del Excel). El comando 'hoy' cambia la fecha con la que se cuentan los vencimientos, no esa columna.
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: producto ABA-0218   (producto con fecha, categoria y lote)
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Campo         Valor                                             
+------------  --------------------------------------------------
+Codigo        ABA-0218                                          
+Nombre        Caldo concentrado Rico Día Premium                
+Categoria     Abarrotes                                         
+Unidad        Unidad                                            
+Precio costo  COP 32.700                                        
+Precio venta  COP 42.100                                        
+Proveedor     Bodega El Dorado ABA S.A.S. (PRV-058, En revisión)
+Ciudad        Ibagué                                            
+Contacto      Sandra García / 6085503661                        
+Correo        sandra.garcia@bodegael.co                         
+
+Lote        Ubicacion  Stock  Minimo  Estado      Vence       Ultimo movimiento  Observaciones     
+----------  ---------  -----  ------  ----------  ----------  -----------------  ------------------
+LT-2430339  D-14-06    73     22      POR VENCER  2026-10-02  2026-08-07         Priorizar rotación
+
+Total                Valor a costo
+-------------------  -------------
+1 lote, 73 unidades  COP 2.387.100
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: producto PAN-0001   (categoria NO CONTROLADA: no es faltante)
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Codigo    Nombre                            Categoria  Proveedor                                   Estado proveedor  Control                                                
+--------  --------------------------------  ---------  ------------------------------------------  ----------------  -------------------------------------------------------
+PAN-0001  Pan francés Horno de Barrio Mini  Panadería  Distribuciones Andina PAN S.A.S. (PRV-061)  Activo            NO CONTROLADO: esta categoria no se lleva en inventario
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: bajo-minimo Ferreteria   (con tilde)
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Lotes bajo el minimo
+Codigo    Producto                              Categoria   Lote        Ubicacion  Stock  Minimo  Falta  Estado     Proveedor
+--------  ------------------------------------  ----------  ----------  ---------  -----  ------  -----  ---------  ---------
+FER-0134  Cerradura cilíndrica Roble Grande     Ferretería  LT-2625422  B-05-02    1      24      23     NO APLICA  PRV-008  
+FER-0146  Bisagra metálica Forte Económico      Ferretería  LT-2645250  C-12-04    1      23      22     NO APLICA  PRV-015  
+FER-0178  Disco de corte Maestro Premium        Ferretería  LT-2403522  E-02-02    5      24      19     NO APLICA  PRV-009  
+FER-0053  Cinta métrica Maestro Mediano         Ferretería  LT-2652606  B-04-01    9      18      9      NO APLICA  PRV-012  
+FER-0214  Extensión eléctrica Roble Grande      Ferretería  LT-2505429  D-04-03    4      13      9      NO APLICA  PRV-001  
+FER-0072  Broca para metal Andino Pequeño       Ferretería  LT-2556987  E-22-01    6      14      8      NO APLICA  PRV-011  
+FER-0087  Broca para concreto Andino Clásico    Ferretería  LT-2472354  E-11-02    20     28      8      NO APLICA  PRV-012  
+FER-0074  Broca para metal Roble Grande         Ferretería  LT-2536136  D-08-04    16     23      7      NO APLICA  PRV-002  
+FER-0142  Bisagra metálica Andino Pequeño       Ferretería  LT-2408878  C-07-04    13     19      6      NO APLICA  PRV-003  
+FER-0154  Silicona sellante Roble Grande        Ferretería  LT-2682426  D-13-01    19     24      5      NO APLICA  PRV-010  
+FER-0111  Chazo plástico Forte Mini             Ferretería  LT-2402070  B-22-06    21     25      4      NO APLICA  PRV-012  
+FER-0096  Tornillo galvanizado Forte Económico  Ferretería  LT-2505928  E-14-01    7      10      3      NO APLICA  PRV-010  
+FER-0082  Broca para concreto Andino Pequeño    Ferretería  LT-2653192  D-11-04    12     13      1      NO APLICA  PRV-012  
+FER-0125  Candado de seguridad Titan Familiar   Ferretería  LT-2604536  A-02-02    8      9       1      NO APLICA  PRV-010  
+
+Los estados salen de la columna 'estado' de la base, con corte 2026-09-04 (el del Excel). El comando 'hoy' cambia la fecha con la que se cuentan los vencimientos, no esa columna.
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: inventario   (comando desconocido: avisa y sigue)
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Comando desconocido: 'inventario'. Escribe 'ayuda' para ver la lista.
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: producto   (falta el argumento: avisa y sigue)
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Uso: producto <codigo> (recibiste 0 argumentos).
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: proveedor PAN-0001   (proveedor inexistente: no rompe la sesion)
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> No existe el proveedor PAN-0001.
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: por-vencer   (tras 'hoy 2026-10-01': el estado NO se reescribe)
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Corte cambiado a 2026-10-01.
+
+Los estados salen de la columna 'estado' de la base, con corte 2026-09-04 (el del Excel). El comando 'hoy' cambia la fecha con la que se cuentan los vencimientos, no esa columna.
+inventario> Corte: 2026-10-01.
+Lotes que vencen en los proximos 30 dias (hoy 2026-10-01)
+Codigo    Producto                               Categoria  Lote        Stock  Vence       Dias  Estado      Proveedor
+--------  -------------------------------------  ---------  ----------  -----  ----------  ----  ----------  ---------
+ABA-0218  Caldo concentrado Rico Día Premium     Abarrotes  LT-2430339  73     2026-10-02  1     POR VENCER  PRV-058  
+ABA-0070  Pasta larga Casa Real Especial         Abarrotes  LT-2588697  116    2026-10-03  2     POR VENCER  PRV-049  
+ABA-0187  Avena en hojuelas La Despensa Clásico  Abarrotes  LT-2426714  83     2026-10-04  3     VIGENTE     PRV-052  
+ABA-0073  Lenteja Rico Día Mediano               Abarrotes  LT-2478599  130    2026-10-13  12    VIGENTE     PRV-059  
+ABA-0025  Sal yodada Casa Real Familiar          Abarrotes  LT-2494371  116    2026-10-30  29    VIGENTE     PRV-060  
+inventario> 
+Hasta luego. Sesion cerrada.
+
+-----------------------------------------------------------------
+ENTRADA: salir
+-----------------------------------------------------------------
+Escribe 'ayuda' para verlos con detalle y 'salir' para cerrar.
+inventario> Hasta luego. Sesion cerrada.
+
+=======================================================================
+RESULTADO: APROBADO
+  - arranque, corte y consultas responden
+  - PAN-0001 sale como NO CONTROLADO, no como faltante
+  - 3 entradas erroneas avisan y la sesion sigue viva
+  - 'hoy' mueve la fecha de conteo sin reescribir la columna estado
+  - 'salir' cierra limpio (returncode 0, sin traceback)
+=======================================================================

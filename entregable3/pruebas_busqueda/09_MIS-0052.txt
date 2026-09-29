@@ -1,0 +1,38 @@
+CASO 09  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto MIS-0052 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto MIS-0052?
+Comando   : uv run python scripts/consultar.py producto MIS-0052
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : MIS-0052
+  Nombre      : Gancho adhesivo HogarPlus Pequeño
+  Categoria   : Miscelánea
+  Lote        : LT-2694172   (1 solo lote)
+  Vence       : 2026-11-24   (81 dias desde el corte -> VIGENTE)
+  Estado      : VIGENTE
+  Ubicacion   : E-16-02
+  Stock       : 101  (minimo 20)
+  Proveedor   : Central El Puente MIS S.A.S. (PRV-024, Activo)
+  Observaciones del lote: sin Observaciones
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Miscelánea
+  [ ] la salida nombra el lote LT-2694172
+  [ ] la salida muestra la fecha 2026-11-24
+  [ ] la salida marca el estado VIGENTE
+  [ ] la salida da el stock 101
+  [ ] la salida no inventa una observacion para este lote: el campo esta
+      vacio en la base
+
+FAIL si
+  - falta cualquiera de los 6 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta inventa un producto, lote, fecha u observacion, o
+  - la respuesta dice que el lote "no tiene fecha de vencimiento"
+      (NO APLICA), cuando si la tiene.
+
+Log       : logs/09_MIS-0052.log   (generado 2026-09-28, PASS)

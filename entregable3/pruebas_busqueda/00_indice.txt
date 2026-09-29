@@ -1,0 +1,104 @@
+INDICE DE PRUEBAS DE BUSQUEDA DE INFORMACION
+===========================================
+Proyecto   : Asistente de inventario (entregable3)
+Base       : datos/procesados/inventario.db
+Corte      : 2026-09-04  (el del Excel; los estados se leen con esa fecha)
+Verificado : 2026-09-28
+Alcance    : 9 casos, cada uno busca un producto con FECHA DE VENCIMIENTO,
+             CATEGORIA y LOTE, y exige que la respuesta los cite.
+
+ESTADO ACTUAL: 9 CASOS EJECUTADOS EL 2026-09-28, 9 PASS, 0 FAIL.
+Cada .log tiene la salida real y el veredicto de su caso.
+
+Ultima ejecucion: 2026-09-28 20:34, sobre una base recien reimportada del
+Excel (75 proveedores, 1250 productos, 827 lotes, 0 relaciones invalidas;
+scripts/revisar_datos.py: Fallas 0. Base APROBADA).
+
+Corrida completa de verificacion (uv sync, 51 tests, checklist, consulta de
+control y resumen de los 9 casos) en logs/10_verificacion.log. La sesion de
+la consola del asistente esta en logs/11_repl.log.
+
+Los 9 casos se pueden correr sin abrir el REPL, con
+`uv run python scripts/consultar.py producto <CODIGO>`, o desde el REPL
+escribiendo `producto <CODIGO>`. Los dos caminos dan la misma salida.
+
+--------------------------------------------------------------------
+Como se leen los estados (corte 2026-09-04)
+--------------------------------------------------------------------
+  VENCIDO     = fecha de vencimiento ya pasada
+  POR VENCER  = de 0 a 29 dias
+  VIGENTE     = 30 dias o mas
+  NO APLICA   = el lote no tiene fecha de vencimiento
+
+--------------------------------------------------------------------
+Hallazgo que delimita los 9 casos
+--------------------------------------------------------------------
+Solo 2 de las 5 categorias tienen lotes con fecha de vencimiento:
+
+  Categoria   Lotes con fecha   Lotes sin fecha (NO APLICA)
+  Abarrotes   201               -
+  Miscelanea   93               -
+  Ferreteria    0               si
+  Papeleria    0               si
+  Panaderia    0               categoria NO CONTROLADA (nunca tiene lote)
+
+  Total con fecha: 294 = 124 VENCIDO + 15 POR VENCER + 155 VIGENTE
+
+Por eso los 9 casos usan solo Abarrotes y Miscelanea. Un caso de Ferreteria
+o Papeleria con "fecha de vencimiento" seria imposible de Satisfacer, y un
+caso de Panaderia violaria la regla 1 de AGENTS.md.
+
+--------------------------------------------------------------------
+Los 9 casos
+--------------------------------------------------------------------
+Caso  Archivo                     Codigo    Cat.        Lote        Vence        Estado      extras
+----  -------------------------  --------  ----------  ----------  -----------  ----------  -------------------------
+ 01   01_ABA-0218.txt             ABA-0218  Abarrotes   LT-2430339  2026-10-02  POR VENCER  proveedor En revision
+ 02   02_MIS-0212.txt             MIS-0212  Miscelanea  LT-2592348  2026-09-08  POR VENCER  stock bajo el minimo
+ 03   03_ABA-0134.txt             ABA-0134  Abarrotes   LT-2670956  2026-09-24  POR VENCER  -
+ 04   04_MIS-0041.txt             MIS-0041  Miscelanea  LT-2401144  2025-03-23  VENCIDO     proveedor En revision
+ 05   05_MIS-0035.txt             MIS-0035  Miscelanea  LT-2633207  2025-03-30  VENCIDO     stock bajo el minimo
+ 06   06_ABA-0220.txt             ABA-0220  Abarrotes   LT-2602617  2025-04-28  VENCIDO     stock bajo el minimo
+ 07   07_ABA-0250.txt             ABA-0250  Abarrotes   LT-2449372  2028-04-06  VIGENTE     stock bajo el minimo
+ 08   08_ABA-0187.txt             ABA-0187  Abarrotes   LT-2426714  2026-10-04  VIGENTE     -
+ 09   09_MIS-0052.txt             MIS-0052  Miscelanea  LT-2694172  2026-11-24  VIGENTE     sin observaciones
+
+Cobertura: 3 VENCIDO, 3 POR VENCER, 3 VIGENTE; 6 Abarrotes y 3 Miscelanea;
+4 casos con stock por debajo del minimo; 2 con proveedor "En revision".
+
+--------------------------------------------------------------------
+Comando de cada caso
+--------------------------------------------------------------------
+Todos usan la ficha de producto, que es la unica vista de consultar.py que
+imprime categoria, lote y fecha con su encabezado correcto:
+
+  uv run python scripts/consultar.py producto <CODIGO>
+
+Resultado de la corrida del 2026-09-28 (salida completa en logs/):
+
+  Caso  Codigo    Log                  Resultado
+  ----  --------  -------------------  ------------------------
+   01   ABA-0218  01_ABA-0218.log      PASS 6/6   2 notas
+   02   MIS-0212  02_MIS-0212.log      PASS 5/5
+   03   ABA-0134  03_ABA-0134.log      PASS 5/5
+   04   MIS-0041  04_MIS-0041.log      PASS 7/7   1 nota
+   05   MIS-0035  05_MIS-0035.log      PASS 5/5
+   06   ABA-0220  06_ABA-0220.log      PASS 5/5
+   07   ABA-0250  07_ABA-0250.log      PASS 6/6
+   08   ABA-0187  08_ABA-0187.log      PASS 6/6
+   09   MIS-0052  09_MIS-0052.log      PASS 7/7
+
+Las 9 fichas volvieron categoria, lote y fecha de vencimiento correctos, y
+ninguna invento un producto, lote ni fecha.
+
+Nota de los casos 01 y 04: la salida de `producto` SÍ muestra el estado del
+proveedor ("En revision") pero NO imprime el aviso de "no habilitado para
+despachar" que exige la regla 3 de AGENTS.md; ese aviso solo lo agrega
+`proveedor`. Queda a cargo del asistente al responder.
+
+--------------------------------------------------------------------
+Verde / rojo
+--------------------------------------------------------------------
+  PASS = se cumplen todos los puntos del criterio de aprobacion del caso.
+  FAIL = falta un punto, o el lote o la fecha no coinciden con lo verificado
+         aqui, o la respuesta inventa un dato.

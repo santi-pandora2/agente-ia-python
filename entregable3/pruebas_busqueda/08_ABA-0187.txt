@@ -1,0 +1,37 @@
+CASO 08  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto ABA-0187 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto ABA-0187?
+Comando   : uv run python scripts/consultar.py producto ABA-0187
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : ABA-0187
+  Nombre      : Avena en hojuelas La Despensa Clásico
+  Categoria   : Abarrotes
+  Lote        : LT-2426714   (1 solo lote)
+  Vence       : 2026-10-04   (exactamente 30 dias desde el corte)
+  Estado      : VIGENTE      (30 dias o mas, no es POR VENCER)
+  Ubicacion   : C-18-04
+  Stock       : 83  (minimo 25)
+  Proveedor   : Productos La Montaña ABA S.A.S. (PRV-052, Activo)
+  Observaciones del lote: Priorizar rotación
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Abarrotes
+  [ ] la salida nombra el lote LT-2426714
+  [ ] la salida muestra la fecha 2026-10-04
+  [ ] la salida marca el estado VIGENTE
+  [ ] la salida da el stock 83
+  [ ] la salida no lo clasifica como POR VENCER: 2026-10-04 cae en el
+      borde de los 30 dias, que segun AGENTS.md sigue siendo VIGENTE
+
+FAIL si
+  - falta cualquiera de los 6 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta lo clasifica como POR VENCER o como VENCIDO, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/08_ABA-0187.log   (generado 2026-09-28, PASS)

@@ -1,0 +1,34 @@
+CASO 03  -  ESTADO: PASS (ejecutado 2026-09-28)
+======================================================================
+Objetivo  : Localizar el producto ABA-0134 y confirmar fecha de
+            vencimiento, categoria y lote.
+Pregunta  : ¿Cual es la fecha de vencimiento, la categoria y el lote del
+            producto ABA-0134?
+Comando   : uv run python scripts/consultar.py producto ABA-0134
+Corte     : 2026-09-04
+
+Datos verificados en la base (2026-09-28)
+  Codigo      : ABA-0134
+  Nombre      : Café molido Andes Grande
+  Categoria   : Abarrotes
+  Lote        : LT-2670956   (1 solo lote)
+  Vence       : 2026-09-24   (a 20 dias del corte -> POR VENCER)
+  Estado      : POR VENCER
+  Ubicacion   : A-18-05
+  Stock       : 165  (minimo 26)
+  Proveedor   : Soluciones Del Norte ABA S.A.S. (PRV-053, Activo)
+  Observaciones del lote: Priorizar rotación
+
+Criterio de aprobacion (PASS)
+  [ ] la salida nombra la categoria Abarrotes
+  [ ] la salida nombra el lote LT-2670956
+  [ ] la salida muestra la fecha 2026-09-24
+  [ ] la salida marca el estado POR VENCER
+  [ ] la salida da el stock 165
+
+FAIL si
+  - falta cualquiera de los 5 puntos, o
+  - el lote o la fecha no coinciden con lo verificado arriba, o
+  - la respuesta inventa un producto, lote o fecha que no esta en la base.
+
+Log       : logs/03_ABA-0134.log   (generado 2026-09-28, PASS)

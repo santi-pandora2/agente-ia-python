@@ -1,0 +1,115 @@
+VERIFICACION COMPLETA DEL ENTREGABLE 3
+=======================================
+Ejecutada : 2026-09-28 20:42:36
+Directorio: /home/ronaltask/Escritorio/agentepyme/entregable3
+Corte de los estados de inventario: 2026-09-04 (el del Excel)
+
+-----------------------------------------------------------------
+1. ENTORNO
+-----------------------------------------------------------------
+$ uv --version
+uv 0.12.19 (x86_64-unknown-linux-gnu)
+
+$ uv sync
+Resolved 9 packages in 4ms
+Checked 7 packages in 0.39ms
+exit=0
+
+-----------------------------------------------------------------
+2. SIN PAQUETE (antes fallaba: No module named src.app)
+-----------------------------------------------------------------
+$ ls src
+ls: no se puede acceder a 'src': No existe el archivo o el directorio
+(no existe: src/ era andamiaje de 'uv init')
+
+$ grep -n 'project.scripts' pyproject.toml
+(sin coincidencia: entry point muerto eliminado)
+
+$ uv run python -m src.app
+/home/ronaltask/Escritorio/agentepyme/entregable3/.venv/bin/python: Error while finding module specification for 'src.app' (ModuleNotFoundError: No module named 'src')
+  -> ya no se invoca desde ningun comando documentado en AGENTS.md
+
+-----------------------------------------------------------------
+3. SUITE DE TESTS
+-----------------------------------------------------------------
+$ uv run pytest -q
+...................................................                      [100%]
+51 passed in 33.89s
+pytest exit=0
+
+-----------------------------------------------------------------
+4. CHECKLIST DE DATOS
+-----------------------------------------------------------------
+$ uv run python scripts/revisar_datos.py
+PASA  Conteos de las 3 tablas del alcance
+      75 proveedores, 1250 productos, 827 lotes
+
+PASA  Claves unicas (productos.codigo, proveedores.id, inventario+producto)
+      0 duplicados
+
+PASA  Integridad referencial inventario->productos->proveedores
+      0 relaciones invalidas
+
+PASA  Campos obligatorios poblados
+      0 nulos en campos obligatorios
+
+PASA  Dominio de estados, precios y textos
+      estados 4 de inventario / 2 de proveedor, precios > 0, precio_venta >= precio_costo, textos sin espacios sobrantes
+
+PASA  Vencimientos coherentes al corte 2026-09-04
+      NO APLICA <=> sin fecha; estado coincide con los dias al corte
+
+PASA  Categorias sin control de inventario (Panadería)
+      0 lotes: la categoria no se lleva en inventario, no reportar faltantes
+
+PASA  Categorias dentro del catalogo conocido
+      productos sin lote en categorias controladas: Abarrotes 49, Ferretería 31, Miscelánea 49, Papelería 44
+
+AVISO Proveedores no Activos
+      4 proveedores no habilitados, con productos vivos: PRV-001 Distribuciones Andina FER S.A.S. (18 productos); PRV-020 Mayorista Del Valle MIS S.A.S. (16 productos); PRV-039 Central El Puente PAP S.A.S. (16 productos); PRV-058 Bodega El Dorado ABA S.A.S. (18 productos)
+
+AVISO Lotes agotados
+      PAP-0028 LT-2636576 (minimo 20); PAP-0245 LT-2444425 (minimo 17)
+
+Fallas: 0. Base APROBADA.
+exit=0
+
+-----------------------------------------------------------------
+5. CONSULTA DE CONTROL
+-----------------------------------------------------------------
+$ uv run python scripts/consultar.py resumen | head -12
+Conteos
+Tabla        Filas
+-----------  -----
+proveedores  75   
+productos    1250 
+inventario   827  
+
+Inventario por estado
+Estado      Lotes  Unidades
+----------  -----  --------
+NO APLICA   533    49847   
+VIGENTE     155    13246   
+
+-----------------------------------------------------------------
+6. LAS 9 PRUEBAS DE BUSQUEDA (detalle en los .log individuales)
+-----------------------------------------------------------------
+  CODIGO         LOG          RESULTADO
+  ABA-0218       01_ABA-0218.log RESULTADO: PASS  (6/6 criterios)
+  MIS-0212       02_MIS-0212.log RESULTADO: PASS  (5/5 criterios)
+  ABA-0134       03_ABA-0134.log RESULTADO: PASS  (5/5 criterios)
+  MIS-0041       04_MIS-0041.log RESULTADO: PASS  (7/7 criterios)
+  MIS-0035       05_MIS-0035.log RESULTADO: PASS  (5/5 criterios)
+  ABA-0220       06_ABA-0220.log RESULTADO: PASS  (5/5 criterios)
+  ABA-0250       07_ABA-0250.log RESULTADO: PASS  (6/6 criterios)
+  ABA-0187       08_ABA-0187.log RESULTADO: PASS  (6/6 criterios)
+  MIS-0052       09_MIS-0052.log RESULTADO: PASS  (7/7 criterios)
+
+  Total: 9 PASS, 0 FAIL
+
+=======================================================================
+RESULTADO DE LA VERIFICACION: APROBADO
+  - 51 tests pasan
+  - checklist de datos: 0 fallas, base APROBADA
+  - 9/9 pruebas de busqueda PASS
+=======================================================================

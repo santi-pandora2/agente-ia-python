@@ -1,0 +1,42 @@
+PRUEBA DE BUSQUEDA  CASO 01  -  ABA-0218
+========================================================
+Ejecutada : 2026-09-28 20:34:39
+Comando   : uv run python scripts/consultar.py producto ABA-0218
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                             
+------------  --------------------------------------------------
+Codigo        ABA-0218                                          
+Nombre        Caldo concentrado Rico Día Premium                
+Categoria     Abarrotes                                         
+Unidad        Unidad                                            
+Precio costo  COP 32.700                                        
+Precio venta  COP 42.100                                        
+Proveedor     Bodega El Dorado ABA S.A.S. (PRV-058, En revisión)
+Ciudad        Ibagué                                            
+Contacto      Sandra García / 6085503661                        
+Correo        sandra.garcia@bodegael.co                         
+
+Lote        Ubicacion  Stock  Minimo  Estado      Vence       Ultimo movimiento  Observaciones     
+----------  ---------  -----  ------  ----------  ----------  -----------------  ------------------
+LT-2430339  D-14-06    73     22      POR VENCER  2026-10-02  2026-08-07         Priorizar rotación
+
+Total                Valor a costo
+-------------------  -------------
+1 lote, 73 unidades  COP 2.387.100
+--------------------------------------------------------
+EVALUACION  (criterios de 01_ABA-0218.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Abarrotes
+  [OK] nombra el lote LT-2430339
+  [OK] muestra la fecha 2026-10-02
+  [OK] marca el estado POR VENCER
+  [OK] da el stock 73
+  [OK] muestra que PRV-058 esta "En revision"
+       NOTA: el texto "no habilitado para despachar" (regla 3 de AGENTS.md)
+       NO lo imprime la salida de `producto`; solo lo agrega `proveedor`.
+       Queda a cargo del asistente al responder.
+  [OK] el lote trae "Separar de inventario disponible" en observaciones
+  [OK] la fecha y el lote coinciden con los verificados: no hay dato inventado
+RESULTADO: PASS  (6/6 criterios)

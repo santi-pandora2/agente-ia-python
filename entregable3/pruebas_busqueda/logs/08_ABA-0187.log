@@ -1,0 +1,39 @@
+PRUEBA DE BUSQUEDA  CASO 08  -  ABA-0187
+========================================================
+Ejecutada : 2026-09-28 20:34:41
+Comando   : uv run python scripts/consultar.py producto ABA-0187
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                            
+------------  -------------------------------------------------
+Codigo        ABA-0187                                         
+Nombre        Avena en hojuelas La Despensa Clásico            
+Categoria     Abarrotes                                        
+Unidad        Unidad                                           
+Precio costo  COP 26.800                                       
+Precio venta  COP 35.000                                       
+Proveedor     Productos La Montaña ABA S.A.S. (PRV-052, Activo)
+Ciudad        Medellín                                         
+Contacto      Diana García / 6077894993                        
+Correo        diana.garcia@productosla.co                      
+
+Lote        Ubicacion  Stock  Minimo  Estado   Vence       Ultimo movimiento  Observaciones     
+----------  ---------  -----  ------  -------  ----------  -----------------  ------------------
+LT-2426714  C-18-04    83     25      VIGENTE  2026-10-04  2026-06-19         Priorizar rotación
+
+Total                Valor a costo
+-------------------  -------------
+1 lote, 83 unidades  COP 2.224.400
+--------------------------------------------------------
+EVALUACION  (criterios de 08_ABA-0187.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Abarrotes
+  [OK] nombra el lote LT-2426714
+  [OK] muestra la fecha 2026-10-04
+  [OK] marca el estado VIGENTE
+  [OK] da el stock 83
+  [OK] no lo clasifica como POR VENCER: 2026-10-04 son 30 dias exactos desde
+       el corte y AGENTS.md deja 30 dias del lado de VIGENTE
+  [OK] la fecha y el lote coinciden con los verificados
+RESULTADO: PASS  (6/6 criterios)

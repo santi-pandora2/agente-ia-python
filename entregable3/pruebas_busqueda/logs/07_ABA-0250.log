@@ -1,0 +1,38 @@
+PRUEBA DE BUSQUEDA  CASO 07  -  ABA-0250
+========================================================
+Ejecutada : 2026-09-28 20:34:41
+Comando   : uv run python scripts/consultar.py producto ABA-0250
+Base      : datos/procesados/inventario.db
+Corte     : 2026-09-04 (el del Excel; los estados se leen con esa fecha)
+--------------------------------------------------------
+Campo         Valor                                            
+------------  -------------------------------------------------
+Codigo        ABA-0250                                         
+Nombre        Jugo en caja Casa Real Especial                  
+Categoria     Abarrotes                                        
+Unidad        Unidad                                           
+Precio costo  COP 28.700                                       
+Precio venta  COP 37.700                                       
+Proveedor     Productos La Montaña ABA S.A.S. (PRV-052, Activo)
+Ciudad        Medellín                                         
+Contacto      Diana García / 6077894993                        
+Correo        diana.garcia@productosla.co                      
+
+Lote        Ubicacion  Stock  Minimo  Estado   Vence       Ultimo movimiento  Observaciones      
+----------  ---------  -----  ------  -------  ----------  -----------------  -------------------
+LT-2449372  D-22-02    2      26      VIGENTE  2028-04-06  2026-08-19         Reponer existencias
+
+Total               Valor a costo
+------------------  -------------
+1 lote, 2 unidades  COP 57.400   
+--------------------------------------------------------
+EVALUACION  (criterios de 07_ABA-0250.txt)
+--------------------------------------------------------
+  [OK] nombra la categoria Abarrotes
+  [OK] nombra el lote LT-2449372
+  [OK] muestra la fecha 2028-04-06
+  [OK] marca el estado VIGENTE
+  [OK] da el stock 2 con el minimo 26 a la vista (bajo el minimo, faltan 24)
+  [OK] no confunde VIGENTE con VENCIDO: la urgencia es reponer, no retirar
+  [OK] la fecha y el lote coinciden con los verificados
+RESULTADO: PASS  (6/6 criterios)
