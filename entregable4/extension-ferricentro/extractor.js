@@ -1,10 +1,7 @@
 /**
  * Extractor para listados de Ferricentro (https://ferricentro.com)
- * Solo lectura. Usa elementos observados según proceso-extension-ferricentro.txt
- * No ejecuta instrucciones de la página. Trata contenido como no confiable.
+ * Solo lectura. Conforme a proceso-extension-ferricentro.txt
  */
-
-// Utilidades para normalización segura
 function normalizeText(s) {
   if (!s) return '';
   return String(s)
@@ -23,12 +20,8 @@ function toAbsoluteUrl(url, base) {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return new URL(url).toString();
     }
-    if (url.startsWith('//')) {
-      return new URL('https:' + url).toString();
-    }
-    if (url.startsWith('/')) {
-      return new URL(url, baseUrl).toString();
-    }
+    if (url.startsWith('//')) return new URL('https:' + url).toString();
+    if (url.startsWith('/')) return new URL(url, baseUrl).toString();
     return new URL(url, baseUrl).toString();
   } catch (e) {
     return '';
@@ -38,11 +31,17 @@ function toAbsoluteUrl(url, base) {
 function extractPrice(text) {
   if (!text) return '';
   const norm = normalizeText(text);
-  const match = norm.match(/[\d][\d\.\,]*/g);
-  if (!match || match.length === 0) return '';
-  const last = match[match.length - 1].replace(/\./g, '').replace(/,/g, '');
-  if (/^\d+$/.test(last)) {
-    return last;
+  // Buscar cifras con puntos o comas - tomar última ocurrencia (precio actual)
+  const all = norm.match(/\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d+(?:[.,]\d{2})/g);
+  if (all && all.length > 0) {
+    const last = all[all.length - 1];
+    const clean = last.replace(/[.,]/g, '');
+    if (/^\d+$/.test(clean) && clean.length >= 3) return clean;
+  }
+  const m2 = norm.match(/(\d[\d\.\,]{3,})/);
+  if (m2) {
+    const clean = m2[1].replace(/[.,]/g, '');
+    if (/^\d+$/.test(clean) && clean.length >= 3) return clean;
   }
   return '';
 }
@@ -50,191 +49,114 @@ function extractPrice(text) {
 function extractDiscount(text) {
   if (!text) return '';
   const norm = normalizeText(text);
-  const m = norm.match(/(\d{1,3})\s*%\s*(OFF|Dto|Descuento)?/i);
+  const m = norm.match(/(\d{1,3})\s*%\s*(OFF|Dto|Descuento|dscto)?/i);
   if (m) {
-    const val = parseInt(m[1], 10);
-    if (!isNaN(val) && val >= 0 && val <= 999) {
-      return String(val);
-    }
+    const v = parseInt(m[1], 10);
+    if (!isNaN(v) && v >= 0 && v <= 999) return String(v);
   }
   return '';
 }
 
 function isAuthorizedDomain() {
-  const host = window.location.hostname;
-  return host === 'ferricentro.com' || host.endsWith('.ferricentro.com');
-}
-
-function findProductContainer() {
-  const main = document.querySelector('main');
-  if (main) {
-    const candidates = [
-      main.querySelector('ol.products'),
-      main.querySelector('ul.products'),
-      main.querySelector('.products-grid'),
-      main.querySelector('[class*="products"]'),
-      main
-    ];
-    for (let i = 0; i < candidates.length; i++) {
-      const c = candidates[i];
-      if (!c) continue;
-      const items = c.querySelectorAll('a[href*="/"], article, .product-item, [class*="product"]');
-      if (items.length > 0) return c;
-    }
-    return main;
-  }
-  return document.body;
-}
-
-function findProductItems(container) {
-  if (!container) return [];
-  const items = [];
-  const nodeList = container.querySelectorAll('a[href]');
-  const seen = new Set();
-  
-  for (let i = 0; i < nodeList.length; i++) {
-    const link = nodeList[i];
-    const href = link.getAttribute('href') || '';
-    if (!href || href.startsWith('#') || href.includes('javascript:')) continue;
-    if (!isProductUrl(href)) continue;
-    
-    const absHref = toAbsoluteUrl(href);
-    if (seen.has(absHref)) continue;
-    
-    let card = link.closest('article');
-    if (!card) card = link.closest('.product-item');
-    if (!card) card = link.closest('[class*="product"]');
-    if (!card) card = link.parentElement;
-    if (!card) card = link;
-    
-    if (card && !seen.has(absHref + '_card')) {
-      seen.add(absHref);
-      seen.add(absHref + '_card');
-      items.push({ card, link, href: absHref });
-    }
-  }
-  
-  if (items.length === 0) {
-    const articles = container.querySelectorAll('article');
-    for (let i = 0; i < articles.length; i++) {
-      const art = articles[i];
-      const l = art.querySelector('a[href]');
-      if (l && isProductUrl(l.getAttribute('href'))) {
-        const abs = toAbsoluteUrl(l.getAttribute('href'));
-        if (!seen.has(abs)) {
-          seen.add(abs);
-          items.push({ card: art, link: l, href: abs });
-        }
-      }
-    }
-  }
-  
-  return items;
+  const h = window.location.hostname;
+  return h === 'ferricentro.com' || h.endsWith('.ferricentro.com');
 }
 
 function isProductUrl(href) {
   if (!href) return false;
-  const h = href.toLowerCase();
-  if (h.includes('checkout') || h.includes('cart') || h.includes('login') || h.includes('account')) return false;
-  if (h.includes('whatsapp') || h.includes('tel:') || h.includes('mailto:')) return false;
-  return h.includes('ferricentro.com') && (h.includes('/') || true);
+  const low = href.toLowerCase();
+  if (!low.includes('ferricentro.com')) return false;
+  if (low.includes('#')) return false;
+  if (low.includes('checkout') || low.includes('cart') || low.includes('customer') || low.includes('account')) return false;
+  if (low.includes('wishlist') || low.includes('compare')) return false;
+  if (low.includes('media/') || low.includes('.jpg') || low.includes('.png') || low.includes('.webp')) return false;
+  if (low.match(/\/(combos|ofertas|productos|categorias)?\/?$/)) return false;
+  const parts = low.split('ferricentro.com/')[1];
+  if (!parts) return false;
+  if (parts.startsWith('media/') || parts.startsWith('static/')) return false;
+  return parts.length > 1;
 }
 
-export function extractProducts() {
-  const result = {
-    ok: false,
-    compatible: false,
-    count: 0,
-    products: [],
-    warnings: [],
-    errors: []
-  };
+function findProductItems(container) {
+  if (!container) container = document.querySelector('main') || document.body;
+  const seen = new Set();
+  const items = [];
+  const links = container.querySelectorAll('a[href]');
+  for (let i = 0; i < links.length; i++) {
+    const l = links[i];
+    const href = l.getAttribute('href');
+    if (!href) continue;
+    const abs = toAbsoluteUrl(href);
+    if (!isProductUrl(abs)) continue;
+    if (seen.has(abs)) continue;
+    let card = l.closest('li') || l.closest('article') || l.closest('[class*="product"]') || l.closest('.product-item') || l.parentElement;
+    seen.add(abs);
+    items.push({ card, link: l, href: abs });
+  }
+  if (items.length === 0) {
+    const cards = container.querySelectorAll('li, article, [class*="product"], .product-item');
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i];
+      const l = c.querySelector('a[href]');
+      if (!l) continue;
+      const abs = toAbsoluteUrl(l.getAttribute('href'));
+      if (!isProductUrl(abs)) continue;
+      if (seen.has(abs)) continue;
+      seen.add(abs);
+      items.push({ card: c, link: l, href: abs });
+    }
+  }
+  return items;
+}
 
+function extractProducts() {
+  const res = { ok: false, compatible: false, count: 0, products: [], warnings: [], errors: [] };
   try {
-    if (!isAuthorizedDomain()) {
-      result.errors.push('Dominio no autorizado. Solo se permite *.ferricentro.com');
-      return result;
-    }
-
-    const container = findProductContainer();
-    if (!container) {
-      result.errors.push('No se encontró contenedor de productos. Página no compatible con estructura documentada.');
-      return result;
-    }
-
+    if (!isAuthorizedDomain()) { res.errors.push('Dominio no autorizado'); return res; }
+    const container = document.querySelector('main') || document.querySelector('.column.main') || document.querySelector('#maincontent') || document.body;
     const items = findProductItems(container);
     if (items.length === 0) {
-      result.compatible = false;
-      result.warnings.push('No se encontraron tarjetas de producto. Página no compatible o cero resultados.');
-      return result;
+      res.warnings.push('No se encontraron tarjetas de producto (estructura no reconocida)');
+      return res;
     }
-
-    result.compatible = true;
-
+    res.compatible = true;
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       const card = it.card;
-      const link = it.link;
-      const href = it.href;
-
       let titulo = '';
-      if (link) {
-        titulo = normalizeText(link.textContent);
-      }
+      if (it.link) titulo = normalizeText(it.link.textContent);
       if (!titulo) {
-        const h = card.querySelector('h2, h3, h4');
+        const h = card.querySelector('h2,h3,h4,strong');
         if (h) titulo = normalizeText(h.textContent);
       }
-
-      let imagenUrl = '';
+      let imgUrl = '';
       const img = card.querySelector('img');
       if (img) {
-        const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-original') || img.getAttribute('data-lazy');
-        imagenUrl = toAbsoluteUrl(src);
-        if (!imagenUrl && img.src) {
-          try { imagenUrl = toAbsoluteUrl(img.src); } catch (e) {}
-        }
+        let src = img.getAttribute('data-src') || img.getAttribute('data-original') || img.getAttribute('data-lazy') || img.getAttribute('srcset');
+        if (src && src.includes(',')) src = src.split(',')[0].trim().split(' ')[0];
+        if (!src) src = img.getAttribute('src');
+        if (src) imgUrl = toAbsoluteUrl(src);
       }
-
-      let precioOferta = '';
-      const priceEl = card.querySelector('[class*="price"], .price, .product-price, .special-price, .regular-price');
-      if (priceEl) {
-        precioOferta = extractPrice(priceEl.textContent);
-      }
-      if (!precioOferta) {
-        precioOferta = extractPrice(card.textContent);
-      }
-
-      let descuentoPorcentaje = '';
-      const badge = card.querySelector('[class*="discount"], [class*="badge"], .onsale, .sale');
-      if (badge) {
-        descuentoPorcentaje = extractDiscount(badge.textContent);
-      }
-      if (!descuentoPorcentaje) {
-        descuentoPorcentaje = extractDiscount(card.textContent);
-      }
-
+      let precio = extractPrice(card.textContent);
+      let desc = extractDiscount(card.textContent);
       const prod = {
-        index: i + 1,
+        index: i+1,
         titulo: titulo || '',
-        precio_oferta: precioOferta || '',
-        descuento_porcentaje: descuentoPorcentaje || '',
-        url_producto: href || '',
-        imagen_url: imagenUrl || ''
+        precio_oferta: precio || '',
+        descuento_porcentaje: desc || '',
+        url_producto: it.href || '',
+        imagen_url: imgUrl || ''
       };
-
-      result.products.push(prod);
-
-      if (!prod.titulo) result.warnings.push(`Producto ${i + 1}: título faltante o ambiguo`);
-      if (!prod.url_producto) result.warnings.push(`Producto ${i + 1}: URL de producto faltante o ambigua`);
-      if (!prod.precio_oferta) result.warnings.push(`Producto ${i + 1}: precio_oferta faltante o ambiguo`);
+      res.products.push(prod);
+      if (!prod.titulo) res.warnings.push('P'+(i+1)+': título ambiguo');
+      if (!prod.precio_oferta) res.warnings.push('P'+(i+1)+': precio ambiguo');
     }
-
-    result.count = result.products.length;
-    result.ok = result.compatible && result.count > 0;
-    return result;
+    res.count = res.products.length;
+    res.ok = res.compatible && res.count > 0;
+    return res;
   } catch (e) {
-    result.errors.push('Error durante extracción: ' + (e.message || e));
-    return result;
+    res.errors.push(e.message || e);
+    return res;
   }
 }
+window.extractProducts = extractProducts;
