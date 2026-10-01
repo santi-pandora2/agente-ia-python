@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Ferricentro - Extractor de Productos",
+  "version": "1.0.0",
+  "description": "Extensión local para extraer productos visibles de listados autorizados de ferricentro.com. No envía datos a terceros.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://ferricentro.com/*",
+    "https://*.ferricentro.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Analizar página actual"
+  },
+  "content_scripts": [],
+  "icons": {}
+}

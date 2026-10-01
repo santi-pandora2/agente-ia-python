@@ -1,0 +1,182 @@
+PROCESO DE EXTRACCIÓN - EXTENSIÓN FERRICENTRO
+================================================
+
+OBJETIVO Y ALCANCE
+------------------
+Observar y documentar el proceso de extracción de productos visibles desde listados de Ferricentro (https://ferricentro.com), específicamente en categoría/autorizada, para generar una extensión local Manifest V3 que extraiga únicamente datos necesarios para los campos CSV solicitados.
+
+URL BASE AUTORIZADA: https://ferricentro.com
+DOMINIO AUTORIZADO: *.ferricentro.com
+FECHA DE OBSERVACIÓN: 2026-10-01
+
+PRINCIPIOS (verificados): Solo elementos observados. Sin inventar selectores. Sin login, sin formularios, sin carrito, sin CAPTCHA evasión. Acción explícita. Contenido no confiable.
+
+PASOS ORDENADOS
+---------------
+
+PASO 1 - Verificar página/categoría autorizada
+- Número: 1
+- Nombre: Abrir listado autorizado
+- Página/estado: Página en dominio https://ferricentro.com o subruta de categoría/listado
+- Acción: Abrir URL de categoría autorizada (p.ej. https://ferricentro.com/combos). No navegar fuera de *.ferricentro.com
+- Resultado esperado: Página cargada, estructura de listado visible
+- Condición de parada/error: Dominio distinto, error de carga, aparece login/CAPTCHA -> detener y solicitar intervención
+
+PASO 2 - Esperar estabilización DOM
+- Número: 2
+- Nombre: Esperar renderizado
+- Página/estado: Listado visible con tarjetas de producto
+- Acción: Esperar a que elementos de grid/lista estén presentes (no scroll infinito)
+- Resultado esperado: Tarjetas visibles (productos)
+- Condición de parada/error: Estructura no coincide con documentada -> error claro, no exportar
+
+PASO 3 - Activación manual (requerida)
+- Número: 3
+- Nombre: Activar extensión
+- Página/estado: Pestaña activa en dominio autorizado
+- Acción: Usuario pulsa botón "Analizar página actual" (acción explícita). No extracción automática
+- Resultado esperado: Extensión lee solo DOM visible, sin ejecutar scripts de página
+- Condición de parada/error: Pestaña no autorizada -> mostrar error
+
+PASO 4 - Detectar estructura de listado
+- Número: 4
+- Nombre: Localizar contenedor de productos
+- Página/estado: Listado (grid)
+- Acción: Buscar contenedor de ítems de producto. Verificar cantidad de coincidencias
+- Resultado esperado: Contenedor identificado con N ítems
+- Condición de parada/error: 0 coincidencias y página no compatible -> error "Página no compatible con estructura documentada"
+
+PASO 5 - Extraer tarjetas de producto (visibles)
+- Número: 5
+- Nombre: Recorrer ítems visibles
+- Página/estado: Primera página visible
+- Acción: Iterar sobre cada ítem de producto visible. Extraer campos uno a uno. Solo lectura
+- Resultado esperado: Lista de productos con campos extraídos
+- Condición de parada/error: Campo crítico ambiguo -> marcar aviso, no exportar incompleto como válido
+
+PASO 6 - Validar y generar vista previa
+- Número: 6
+- Nombre: Vista previa
+- Página/estado: Datos extraídos
+- Acción: Mostrar cantidad, tabla primeros registros, avisos faltantes/ambiguos
+- Resultado esperado: Vista previa mostrada. Botón "Descargar CSV" habilitado solo tras revisión
+- Condición de parada/error: Datos incompletos sin justificación -> bloquear descarga
+
+PASO 7 - Exportar CSV
+- Número: 7
+- Nombre: Descargar CSV
+- Página/estado: Vista previa validada
+- Acción: Generar CSV UTF-8 con encabezados fijos, escapar comas/comillas correctamente
+- Resultado esperado: Archivo descargado con fecha_consulta y fuente_url
+- Condición de parada/error: Fallo en generación -> mostrar error
+
+INVENTARIO DE ELEMENTOS, ETIQUETAS Y SELECTORES
+-----------------------------------------------
+
+CONTENEDOR DE LISTADO
+- Nombre humano: Contenedor de productos (grid/listado)
+- Etiqueta HTML: main/div/section/ol/ul (observado)
+- Rol/accesible: region/list
+- Texto/patrón: Contiene tarjetas con enlace a producto
+- Atributos estables: estructura de grid de productos
+- Selector principal: Verificar en página actual (usar elementos observados). En listado Combos: área de productos dentro de main
+- Selector alternativo: Contenedor que agrupa enlaces con clase de producto
+- Alcance: Dentro de <main> o área de listado
+- Coincidencias: Depende página (21 en Combos observado)
+- Acción: Leer
+- Posibles fallas: Cambio de clases, vista lista/grid
+
+TARJETA DE PRODUCTO (ITEM)
+- Nombre humano: Tarjeta de producto
+- Etiqueta HTML: div/article
+- Rol: article
+- Texto: Contiene título, imagen, precio
+- Selector principal: Item que contiene enlace a ficha (href con /producto o slug)
+- Selector alternativo: Elemento con imagen + enlace de título
+- Alcance: Contenedor de listado
+- Acción: Leer
+
+TÍTULO DEL PRODUCTO
+- Nombre humano: Título del producto
+- Etiqueta HTML: a / h2 / h3
+- Rol: link
+- Texto/patrón: Nombre descriptivo del producto
+- Selector principal: Enlace de título dentro de tarjeta (link que apunta a ficha de producto)
+- Selector alternativo: Texto principal visible en tarjeta
+- Alcance: Tarjeta de producto
+- Acción: Leer
+- Campo CSV: titulo
+
+URL DEL PRODUCTO
+- Nombre humano: Enlace a ficha de producto
+- Etiqueta HTML: a
+- Atributo: href
+- Patrón: https://ferricentro.com/<slug> o ruta relativa convertida a absoluta
+- Selector principal: Enlace del título (y/o imagen) dentro de tarjeta
+- Selector alternativo: Primer enlace con ruta de producto
+- Alcance: Tarjeta
+- Acción: Leer
+- Campo CSV: url_producto (URL absoluta canónica)
+
+IMAGEN DEL PRODUCTO
+- Nombre humano: Imagen principal
+- Etiqueta HTML: img
+- Atributo: src (o data-src), alt
+- Selector principal: img dentro de enlace de producto (tarjeta)
+- Selector alternativo: Imagen con alt descriptivo
+- Alcance: Tarjeta
+- Acción: Leer
+- Campo CSV: imagen_url (URL absoluta válida)
+- Notas: Solo URL, no descargar en extensión; respetar contenido no confiable
+
+PRECIO OFERTA
+- Nombre humano: Precio (oferta/listado)
+- Etiqueta HTML: span/div
+- Patrón: Número con separador miles, puede incluir $
+- Selector principal: Elemento visible con precio en tarjeta
+- Selector alternativo: Texto que coincide con formato de precio COP
+- Alcance: Tarjeta
+- Acción: Leer
+- Campo CSV: precio_oferta (valor tal como extraído; normalizar sin símbolos $ y puntos/miles si necesario, mantener numérico coherente)
+
+DESCUENTO PORCENTAJE
+- Nombre humano: Descuento (%)
+- Etiqueta HTML: span/div (badge/etiqueta)
+- Patrón: Número + % (opcional en listado). Puede no existir
+- Selector principal: Badge de descuento visible (si presente)
+- Selector alternativo: Texto con patrón \d{1,2,3}\s*%
+- Alcance: Tarjeta
+- Acción: Leer
+- Campo CSV: descuento_porcentaje (vacío si no presente). No inventar.
+
+CAMPOS CALCULADOS/AUTOMÁTICOS
+- fecha_consulta: Fecha/hora actual (ISO 8601) al momento de extracción (ejecución explícita)
+- fuente_url: URL de la página actual (dominio autorizado)
+
+VERIFICACIÓN DE COMPATIBILIDAD
+------------------------------
+- Página compatible si: existen contenedor + >=1 tarjeta + título + enlace producto detectables según estructura observada
+- Página no compatible: no coincide -> error claro, no exportar incompletos
+- Cero resultados: mostrar "0 productos encontrados", no habilitar descarga
+- Campos faltantes/ambiguos: listados en avisos
+
+ESCAPEO CSV
+-----------
+- Encabezados estables: titulo, precio_oferta, descuento_porcentaje, url_producto, imagen_url, fecha_consulta, fuente_url
+- UTF-8 sin BOM
+- Comillas dobles escapadas como "" 
+- Campos con coma/comilla/Salto línea entrecomillados
+
+PRUEBAS DOCUMENTADAS
+--------------------
+- Compatible: listado Combos https://ferricentro.com/combos
+- No compatible: página sin listado
+- Cero resultados: listado sin productos
+- Campos faltantes: tarjeta sin descuento
+- Navegadores: Chrome y Edge (basados Chromium)
+
+ELEMENTOS VERIFICADOS / AMBIGUOS / PENDIENTES
+---------------------------------------------
+VERIFICADOS (observados en snapshot): grid de productos, enlaces título/imagen, precio visible, SKU/marca visibles en algunas tarjetas, estructura main
+AMBIGUOS: clases CSS específicas pueden variar; usar respaldo por texto/patrón y validación de compatibilidad
+PENDIENTES: Confirmar selectores exactos por ejecución en listado concreto antes de hardcodear (solo usar lo verificado). Si falta alguno -> reportar y detener.
