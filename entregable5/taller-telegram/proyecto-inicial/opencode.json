@@ -1,0 +1,45 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow"
+    },
+    "edit": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      "opencode.json": "deny",
+      "AGENTS.md": "deny"
+    },
+    "bash": {
+      "*": "ask",
+      "deno task check": "allow",
+      "deno task test": "allow",
+      "*deno task telegram:*": "deny",
+      "deno --version": "allow",
+      "node --version": "allow",
+      "git status*": "allow",
+      "*--env-file*": "deny",
+      "*telegram-config*": "deny",
+      "*supabase login*": "deny",
+      "*supabase link*": "deny",
+      "*supabase functions deploy*": "deny",
+      "*supabase secrets*": "deny",
+      "*supabase db push*": "deny"
+    },
+    "external_directory": "deny",
+    "task": "deny"
+  },
+  "agent": {
+    "plan": {
+      "permission": {
+        "edit": "deny",
+        "bash": "deny"
+      }
+    }
+  }
+}

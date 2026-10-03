@@ -1,0 +1,13 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.2"
+  },
+  "tasks": {
+    "check": "deno check \"scripts/**/*.ts\" \"tests/**/*.ts\" \"supabase/functions/**/*.ts\"",
+    "check:funcion": "deno check --config supabase/functions/spa-telegram/deno.json supabase/functions/spa-telegram/index.ts",
+    "test": "deno test \"tests/**/*.ts\" \"scripts/**/*.ts\"",
+    "telegram:identificar": "deno run --env-file=.env --allow-env=TELEGRAM_BOT_TOKEN,TELEGRAM_WEBHOOK_SECRET,TELEGRAM_WEBHOOK_URL --allow-net=api.telegram.org scripts/telegram-config.ts identificar",
+    "telegram:conectar": "deno run --env-file=.env --allow-env=TELEGRAM_BOT_TOKEN,TELEGRAM_WEBHOOK_SECRET,TELEGRAM_WEBHOOK_URL --allow-net=api.telegram.org scripts/telegram-config.ts conectar",
+    "telegram:estado": "deno run --env-file=.env --allow-env=TELEGRAM_BOT_TOKEN,TELEGRAM_WEBHOOK_SECRET,TELEGRAM_WEBHOOK_URL --allow-net=api.telegram.org scripts/telegram-config.ts estado"
+  }
+}

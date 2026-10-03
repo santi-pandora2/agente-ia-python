@@ -1,0 +1,7 @@
+project_id = "spa-manos-pies"
+
+# La función spa-telegram se autentica comparando el encabezado
+# X-Telegram-Bot-Api-Secret-Token con TELEGRAM_WEBHOOK_SECRET, no con un JWT.
+# verify_jwt = false es obligatorio porque Telegram no envía ese encabezado.
+[functions.spa-telegram]
+verify_jwt = false
