@@ -63,6 +63,7 @@ export interface Repo {
     telegram_message_id?: number;
     error_codigo?: string;
     retry_after_seconds?: number;
+    permanente?: boolean;
   }): Promise<boolean>;
   getPendientes(offset: number, limit: number): Promise<Cita[]>;
 }
@@ -161,6 +162,7 @@ export function createRepo(url: string, serviceKey: string): Repo {
         p_telegram_message_id: params.telegram_message_id ?? null,
         p_error_codigo: params.error_codigo ?? null,
         p_retry_after_seconds: params.retry_after_seconds ?? null,
+        p_permanente: params.permanente ?? false,
       });
       if (error) throw error;
       return !!data;

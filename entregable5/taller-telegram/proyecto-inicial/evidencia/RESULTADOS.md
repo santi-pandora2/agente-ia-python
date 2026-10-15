@@ -1,56 +1,77 @@
-# Resultados
+# Resultados — Pruebas del bot (PROMPT 4)
 
-## Estructura y base de datos (etapa actual)
+Actualizado en esta etapa con lo **realmente ejecutado**. La integración SQL, la
+concurrencia y Telegram real **no** se ejecutaron: quedan PENDIENTES.
 
-- Migración: `supabase/migrations/202610020001_spa.sql`
-- Funciones creadas: `spa_generar_horarios()`,
-  `spa_mutar_cita(p_update_id, p_accion, p_actor_user_id, p_actor_chat_id, p_nombre, p_cita_id, p_servicio_id, p_horario_id, p_admin_user_id, p_admin_chat_id)`,
-  `spa_reclamar_notificaciones(p_lote)`,
-  `spa_finalizar_notificacion(p_id,p_lease_token,p_enviada,p_telegram_message_id,p_error_codigo,p_retry_after_seconds)`
-- Config: `supabase/config.toml` (project_id spa-manos-pies,
-  functions.spa-telegram.verify_jwt=false)
-- Tests integración: `tests/integration.sql` (BEGIN/ROLLBACK, aserciones,
-  permisos, duplicados, ocupación, cancelación, vencimiento, avisos,
-  concurrencia)
+## Comandos ejecutados
+
+```bash
+deno task check
+deno task check:funcion
+deno task test
+```
+
+- `deno task check`: OK. Comprueba `scripts/**`, `tests/**` y
+  `supabase/functions/**` (incluye `index.ts`).
+- `deno task check:funcion`: OK. Comprueba el entrypoint
+  `supabase/functions/spa-telegram/index.ts` con el `deno.json` de su carpeta.
+- `deno task test`: **43 aprobadas / 0 fallidas** (sin `.env`, sin tokens, sin
+  `--allow-all`, sin acceso a Telegram ni a Supabase).
+  - `scripts/telegram-config_test.ts`: 6 pruebas (se conserva en la suite).
+  - `tests/handler_test.ts`: 29 pruebas.
+  - `tests/telegram_test.ts`: 8 pruebas.
 
 ## Estado por tipo
 
-- **Unitario**: PENDIENTE (requiere handler/telegram testables)
-- **Integración SQL**: PENDIENTE (ejecutar en SQL Editor con service_role)
-- **Concurrencia (2 sesiones)**: PENDIENTE (verificar con instrucciones en
-  integration.sql)
-- **Telegram real**: PENDIENTE
+- **Unitario**: APROBADO (43/43 con dobles de prueba y reloj fijo). No prueba
+  Postgres, RLS ni despliegue.
+- **Integración SQL** (`tests/integration.sql`): PENDIENTE. No ejecutado.
+- **Concurrencia (2 sesiones)**: PENDIENTE. No ejecutada.
+- **Telegram real**: PENDIENTE. No ejecutado.
 
-## Notas
+## Escenarios unitarios cubiertos
 
-- Índice único parcial
-  `spa_citas(horario_id) WHERE estado IN ('pendiente','confirmada')` protege
-  ocupación incluso con solicitudes simultáneas. Consultar "libre" antes de
-  insertar no sustituye este índice; la RPC bloquea filas y maneja
-  unique_violation devolviendo `horario_ocupado`.
-- RPCs revocadas de anon/authenticated/PUBLIC; solo service_role.
-- spa_mutar_cita guarda evento, cita y avisos en la misma transacción.
-- Reclamo con FOR UPDATE SKIP LOCKED, lease 30s, token, lote limitado,
-  reintentos con estados `revision/fallida`.
+Menú inicial; servicios; día y horario en `America/Bogota`; fecha pasada y día
+de hoy excluidos; horario ocupado; cita propia; cancelación ajena; confirmación
+por alguien que no es responsable; callback manipulado; callback viejo; dos
+solicitudes de la misma persona; replay de `update_id` (se propaga el
+`update_id` real de Telegram); doble confirmación; aviso fallido después de
+guardar (la cita se conserva); HTTP 200 de Telegram con `ok=false`; 429 con
+`retry_after`; timeout incierto (queda para revisión); error permanente (fallido);
+lease vencido (no se marca enviado); secreto incorrecto (401); JSON inválido
+(400); método incorrecto (405); mensajes de grupo; texto no reconocido;
+`/pendientes` y `/reintentar` exclusivos del responsable.
 
-## Ejecutar migración (una sola vez, desde SQL Editor)
+Se verifica que los errores se muestran en español y son comprensibles, que
+ninguna falla de envío borra la cita y que el aviso se guarda con el estado
+correcto (`enviada` solo si Telegram confirma `ok=true` con `message_id`).
 
-1. Abrir Supabase -> SQL Editor.
-2. Copiar/pegar contenido de `supabase/migrations/202610020001_spa.sql` y
-   ejecutar.
-3. Verificar: tablas creadas, funciones presentes, servicios insertados,
-   horarios generados.
-4. Probar `tests/integration.sql` (puede ejecutarse completo con
-   BEGIN/ROLLBACK).
+## Cambios de código de esta etapa
 
-## Pendiente para siguiente etapa
+- `handler.ts`: reloj inyectable (`now`); se propaga el `update_id` real a la
+  RPC (antes se usaba `Date.now()`); callbacks autocontenidos con formato
+  validado (`servicio:1`, `dia:1:20261015`, `enviar:1:25`, `confirmar:42`, …) y
+  longitud máxima de 64 bytes; permisos por `user_id` en el servidor; exclusión
+  de hoy y de horarios pasados en Bogotá; `handleRequest` con 401/405/400/200 y
+  `500` ante falla técnica antes de confirmar; procesamiento de avisos sin
+  perder los pendientes por error.
+- `telegram.ts`: `fetch` inyectable; `uncertain` (timeout, red, JSON ilegible) y
+  `permanente` (403/bloqueado); no filtra la URL con el token.
+- `repository.ts`: `finalizarNotificacion` acepta `permanente`.
+- `index.ts`: valida variables al iniciar y delega en `handleRequest`;
+  `Deno.serve` solo se registra aquí.
+- `202610020001_spa.sql`: reserva de `update_id` con `GET DIAGNOSTICS`
+  (duplicado real por evento) y parámetro `p_permanente` en
+  `spa_finalizar_notificacion`.
 
-- Implementar `supabase/functions/spa-telegram/` (index.ts, handler.ts,
-  repository.ts, telegram.ts) con Deno.serve solo en index.ts.
-- Ajustar/usar deno.json raíz con check/test completos y conservar tareas
-  telegram:existentes.
-- Validación webhook (X-Telegram-Bot-Api-Secret-Token), callbacks
-  autocontenidos, permisos por user_id.
-- No marcar notificación como enviada antes de ok=true; recuperación por evento
-  o `/reintentar`.
-- Ejecutar `deno task check` y `deno task test` tras cambios funcionales.
+## Notas y pendientes
+
+- La migración de esta etapa contiene la sección de RPC. Para que
+  `tests/integration.sql` sea ejecutable, el esquema (tablas, índices únicos
+  parciales, RLS, semilla `spa_generar_horarios()`) debe existir en la base de
+  datos antes de correr la prueba; verificar/restaurar esa sección antes de
+  declarar la integración aprobada.
+- La concurrencia real exige dos sesiones separadas según las instrucciones de
+  `tests/integration.sql`; no se deduce de consultas secuenciales.
+- Sin cron, los avisos pendientes no se envían solos: avanzan con eventos nuevos
+  o con `/reintentar`. Ver `GUIA_PUBLICACION.md`.

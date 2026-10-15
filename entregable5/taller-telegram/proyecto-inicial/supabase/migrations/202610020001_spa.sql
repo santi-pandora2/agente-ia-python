@@ -19,7 +19,6 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_evento_exists boolean;
   v_horario spa_horarios%rowtype;
   v_servicio spa_servicios%rowtype;
   v_cita spa_citas%rowtype;
@@ -27,34 +26,15 @@ declare
   v_update_id bigint := p_update_id;
   v_admin_user_id bigint := p_admin_user_id;
   v_admin_chat_id bigint := p_admin_chat_id;
+  v_filas integer := 0;
 begin
-  -- Resguardar update_id y evento
+  -- Reservar update_id en la misma transacción. Si ya existía, no se inserta
+  -- ninguna fila y se devuelve duplicado sin efectos.
   insert into spa_eventos (update_id, tipo)
   values (v_update_id, p_accion)
   on conflict (update_id) do nothing;
-  select exists (select 1 from spa_eventos where update_id = v_update_id) into v_evento_exists;
-  -- Si ya existía, verificar si fue procesado por este update_id? Retornar duplicado
-  -- Para identificar duplicado: si no insertamos nada, asumimos ya procesado
-  if not found and (select count(*) from spa_eventos where update_id = v_update_id) >= 0 then
-    -- on conflict: evento ya existe
-    null;
-  end if;
-  -- Detectar duplicado: intentar obtener cita/avisos relacionados? pero no tenemos vínculo; 
-  -- Estrategia: si evento ya existía antes de este intento, devolver duplicado
-  -- Simplificado: contar eventos con ese update_id creado recientemente? no. Usar bloqueo: 
-  -- evento insertado solo una vez; para duplicado retornamos {"estado":"duplicado","update_id":...}
-  -- Comprobar existencia previa
-  perform 1 from spa_eventos e where e.update_id = v_update_id limit 1;
-  -- Duplicado: si hubo conflicto en insert, el evento ya estaba
-  -- plpgsql: INSERT ... ON CONFLICT no cambia FOUND en conflicto; mejor usar CTE o select
-  begin
-    insert into spa_eventos (update_id, tipo) values (v_update_id, p_accion)
-    on conflict do nothing;
-  exception when others then
-    return jsonb_build_object('estado','duplicado','update_id',v_update_id);
-  end;
-  -- Reintentar detección
-  if (select count(*) from spa_eventos where update_id = v_update_id) = 0 then
+  get diagnostics v_filas = row_count;
+  if v_filas = 0 then
     return jsonb_build_object('estado','duplicado','update_id',v_update_id);
   end if;
   -- Acciones
@@ -256,7 +236,8 @@ create or replace function spa_finalizar_notificacion(
   p_enviada boolean,
   p_telegram_message_id bigint default null,
   p_error_codigo text default null,
-  p_retry_after_seconds integer default null
+  p_retry_after_seconds integer default null,
+  p_permanente boolean default false
 )
 returns boolean
 language plpgsql
@@ -284,7 +265,7 @@ begin
     where id = p_id;
     return true;
   else
-    if v_n.intentos >= 5 then
+    if p_permanente or v_n.intentos >= 5 then
       update spa_notificaciones
       set estado = 'fallida',
           error_codigo = coalesce(p_error_codigo,'max_intentos'),
