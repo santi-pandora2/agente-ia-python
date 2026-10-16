@@ -169,14 +169,29 @@ ESCAPEO CSV
 
 PRUEBAS DOCUMENTADAS
 --------------------
-- Compatible: listado Combos https://ferricentro.com/combos
-- No compatible: página sin listado
+- Compatible: listado Combos https://ferricentro.com/combos (verificado 2026-10-16: 20/20 tarjetas)
+- No compatible: página sin listado (verificado 2026-10-16 con /checkout/cart: error claro, sin exportar)
 - Cero resultados: listado sin productos
-- Campos faltantes: tarjeta sin descuento
+- Campos faltantes: tarjeta sin descuento (verificado: campo vacío, no inventado)
 - Navegadores: Chrome y Edge (basados Chromium)
+
+AUTOMATIZACIÓN LOCAL (launcher)
+------------------------------
+- abrir_ferricentro.sh abre Chrome con perfil local, carga la extensión sin empaquetar y
+  ejecuta la misma lógica del botón "Analizar página actual" (chrome.scripting.executeScript
+  + chrome.downloads) desde el contexto de la extensión.
+- La acción explícita es la ejecución del script por parte del usuario. No hay content script
+  automático en la página, no hay extracción al cargar el sitio, no se amplía el alcance:
+  mismos dominios autorizados, misma primera página visible, mismos campos y validaciones.
+- Chrome 137+ impide --load-extension en Google Chrome; la carga usa CDP
+  Extensions.loadUnpacked (--enable-unsafe-extension-debugging, puerto local 9222+).
 
 ELEMENTOS VERIFICADOS / AMBIGUOS / PENDIENTES
 ---------------------------------------------
 VERIFICADOS (observados en snapshot): grid de productos, enlaces título/imagen, precio visible, SKU/marca visibles en algunas tarjetas, estructura main
 AMBIGUOS: clases CSS específicas pueden variar; usar respaldo por texto/patrón y validación de compatibilidad
 PENDIENTES: Confirmar selectores exactos por ejecución en listado concreto antes de hardcodear (solo usar lo verificado). Si falta alguno -> reportar y detener.
+  -> Confirmado 2026-10-16 en https://ferricentro.com/combos (Chrome 155):
+     grid ol.products.list.items.product-items; tarjeta li.item.product.product-item;
+     título a.product-item-link; imagen img.product-image-photo;
+     precio [data-price-type="finalPrice"] (data-price-amount); descuento .discount_percent.

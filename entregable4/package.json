@@ -1,0 +1,9 @@
+{
+  "name": "entregable4",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Abre Chrome con la extensión Ferricentro y ejecuta la extracción (analizar + descargar CSV).",
+  "scripts": {
+    "en4": "bash abrir_ferricentro.sh"
+  }
+}
