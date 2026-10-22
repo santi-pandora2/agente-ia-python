@@ -1,8 +1,10 @@
-import type { Repo } from "./repository.ts";
+import type { Cita, Repo } from "./repository.ts";
 import type { TelegramClient } from "./telegram.ts";
 
 export const ZONA = "America/Bogota";
 export const MAX_PENDIENTES = 10;
+// La especificación pide los próximos siete días de atención, excluyendo hoy.
+export const DIAS_ATENCION = 7;
 
 export interface Context {
   repo: Repo;
@@ -11,6 +13,10 @@ export interface Context {
   adminChatId: number;
   // Reloj inyectable: las pruebas usan una fecha fija, la función usa el reloj real.
   now: () => Date;
+  // Datos del evento en curso. Los fija handleUpdate en cada invocación:
+  // no se conserva estado entre eventos.
+  update_id?: number;
+  contAvisos?: number;
 }
 
 export interface TelegramUpdate {
@@ -24,7 +30,7 @@ export interface TelegramUpdate {
     id: string;
     from: { id: number; first_name?: string };
     data?: string;
-    message?: { chat: { id: number } };
+    message?: { chat: { id: number; type?: string } };
   };
 }
 
@@ -32,6 +38,7 @@ export interface ResultadoAvisos {
   aceptadas: number;
   fallidas: number;
   revision: number;
+  reintentables: number;
   sin_lease: number;
 }
 
@@ -75,6 +82,28 @@ export function horaBogota(iso: string): string {
   });
 }
 
+// Etiqueta legible de un día (YYYY-MM-DD) sin pasar por una zona horaria:
+// el día se interpreta como calendario y se arma en UTC para que el nombre
+// del día de la semana no se corra por el desplazamiento local.
+export function fmtDiaBogota(ymd: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!m) return ymd;
+  const y = Number(m[1]);
+  const mes = Number(m[2]);
+  const d = Number(m[3]);
+  if (mes < 1 || mes > 12 || d < 1 || d > 31) return ymd;
+  const fecha = new Date(Date.UTC(y, mes - 1, d));
+  const dia = fecha.toLocaleDateString("es-CO", {
+    timeZone: "UTC",
+    weekday: "short",
+  });
+  const mesTxt = fecha.toLocaleDateString("es-CO", {
+    timeZone: "UTC",
+    month: "short",
+  });
+  return `${dia} ${d} ${mesTxt}`.replace(/\./g, "").trim();
+}
+
 function ymdToCb(ymd: string): string {
   return ymd.replaceAll("-", "");
 }
@@ -87,6 +116,41 @@ export function buildKb(
   rows: Array<Array<{ text: string; callback_data: string }>>,
 ) {
   return { inline_keyboard: rows };
+}
+
+// ---------------------------- Envío directo -------------------------------
+// Los mensajes de navegación y de resultado se envían directamente. Si el
+// envío falla, queda registrado un aviso recuperable con clave derivada del
+// update_id: así el mensaje no se pierde y se puede reintentar con
+// /reintentar. Nunca se registra el cuerpo entrante de Telegram.
+export async function enviarDirecto(
+  ctx: Context,
+  chatId: number,
+  text: string,
+  reply_markup?: unknown,
+): Promise<void> {
+  let ok = false;
+  try {
+    const r = await ctx.tg.sendMessage({ chat_id: chatId, text, reply_markup });
+    ok = r.ok;
+  } catch (_) {
+    ok = false;
+  }
+  if (ok) return;
+  const update_id = ctx.update_id;
+  if (update_id === undefined) return;
+  const n = ctx.contAvisos ?? 0;
+  ctx.contAvisos = n + 1;
+  try {
+    await ctx.repo.registrarAvisoNavegacion({
+      clave: `navegacion:${update_id}:${n}`,
+      chat_id: chatId,
+      texto: text.slice(0, 4000),
+    });
+  } catch (_) {
+    // Si tampoco se puede registrar el aviso, no hay más que hacer aquí:
+    // la cita (si hubo una) sigue guardada.
+  }
 }
 
 // ------------------------------ Callbacks ---------------------------------
@@ -167,28 +231,67 @@ export function parseCallback(data: string | undefined): Callback | null {
 
 // ------------------------------ Notificaciones ----------------------------
 
-function formatNotif(payload: unknown): string {
+export interface Aviso {
+  text: string;
+  reply_markup?: unknown;
+}
+
+// Convierte el teclado que viaja en el payload del aviso al formato de
+// Telegram. Solo se aceptan callback_data que el enrutador ya sabe
+// interpretar (parseCallback): un dato manipulado no autoriza nada y
+// tampoco se envía a Telegram.
+function tecladoDesdePayload(valor: unknown): unknown | undefined {
+  if (!Array.isArray(valor)) return undefined;
+  const filas: Array<Array<{ text: string; callback_data: string }>> = [];
+  for (const fila of valor) {
+    if (!Array.isArray(fila)) continue;
+    const botones: Array<{ text: string; callback_data: string }> = [];
+    for (const boton of fila) {
+      const b = (boton ?? {}) as Record<string, unknown>;
+      const texto = String(b.texto ?? "").trim().slice(0, 64);
+      const callback = String(b.callback_data ?? "");
+      if (!texto || callback.length > 64) continue;
+      if (!parseCallback(callback)) continue;
+      botones.push({ text: texto, callback_data: callback });
+    }
+    if (botones.length > 0) filas.push(botones);
+  }
+  return filas.length > 0 ? { inline_keyboard: filas } : undefined;
+}
+
+export function formatNotif(payload: unknown): Aviso {
   const p = (payload ?? {}) as Record<string, unknown>;
-  if (!p.tipo) return "Notificación del spa.";
+  if (!p.tipo) return { text: "Notificación del spa." };
   switch (p.tipo) {
     case "solicitada_cliente":
-      return `Solicitud recibida. ID de cita: ${p.cita_id}. Pendiente de confirmación.`;
+      return {
+        text: `Solicitud recibida. ID de cita: ${p.cita_id}. Pendiente de confirmación.`,
+      };
     case "solicitada_admin":
-      return `Nueva solicitud. Cita: ${p.cita_id}. Cliente: ${p.nombre ?? p.cliente_user_id ?? ""}`;
+      return {
+        text:
+          `Nueva solicitud. Cita: ${p.cita_id}. Cliente: ${p.nombre ?? p.cliente_user_id ?? ""}`,
+        reply_markup: tecladoDesdePayload(p.teclado),
+      };
     case "confirmada_cliente":
-      return `Tu cita ${p.cita_id} fue confirmada.`;
+      return { text: `Tu cita ${p.cita_id} fue confirmada.` };
     case "confirmada_admin":
-      return `Cita ${p.cita_id} confirmada.`;
+      return { text: `Cita ${p.cita_id} confirmada.` };
     case "rechazada_cliente":
-      return `Tu cita ${p.cita_id} fue rechazada. Solicita otro horario.`;
+      return {
+        text: `Tu cita ${p.cita_id} fue rechazada. Solicita otro horario.`,
+      };
     case "rechazada_admin":
-      return `Cita ${p.cita_id} rechazada.`;
+      return { text: `Cita ${p.cita_id} rechazada.` };
     case "cancelada_cliente":
-      return `Tu cita ${p.cita_id} fue cancelada.`;
+      return { text: `Tu cita ${p.cita_id} fue cancelada.` };
     case "cancelada_admin":
-      return `Cita ${p.cita_id} cancelada por la clienta.`;
+      return { text: `Cita ${p.cita_id} cancelada por la clienta.` };
+    case "navegacion":
+      // Aviso recuperable de un mensaje que no se pudo enviar directamente.
+      return { text: String(p.texto ?? "Notificación del spa.").slice(0, 4000) };
     default:
-      return "Notificación del spa.";
+      return { text: "Notificación del spa." };
   }
 }
 
@@ -196,7 +299,13 @@ export async function procesarAvisos(
   ctx: Context,
   lote: number,
 ): Promise<ResultadoAvisos> {
-  const res: ResultadoAvisos = { aceptadas: 0, fallidas: 0, revision: 0, sin_lease: 0 };
+  const res: ResultadoAvisos = {
+    aceptadas: 0,
+    fallidas: 0,
+    revision: 0,
+    reintentables: 0,
+    sin_lease: 0,
+  };
   let claims;
   try {
     claims = await ctx.repo.reclamarNotificaciones(lote);
@@ -205,11 +314,13 @@ export async function procesarAvisos(
   }
   for (const c of claims) {
     const payload = c.payload;
+    const aviso = formatNotif(payload);
     let envio;
     try {
       envio = await ctx.tg.sendMessage({
         chat_id: c.chat_id,
-        text: formatNotif(payload),
+        text: aviso.text,
+        reply_markup: aviso.reply_markup,
       });
     } catch (_) {
       // Excepción inesperada: no se marcó como enviada. Queda en revisión.
@@ -219,6 +330,7 @@ export async function procesarAvisos(
           lease_token: c.lease_token,
           enviada: false,
           error_codigo: "excepcion",
+          incierto: true,
         });
       } catch (_) { /* no interrumpir el lote */ }
       res.revision++;
@@ -242,6 +354,9 @@ export async function procesarAvisos(
     }
 
     // Falla de envío: la cita NUNCA se borra; solo se actualiza el aviso.
+    // - permanente (bot bloqueado) -> fallida
+    // - incierto (timeout, red)    -> revision (no se reenvía a ciegas)
+    // - otro error recuperable      -> vuelve a la cola con espera creciente
     try {
       finalizado = await ctx.repo.finalizarNotificacion({
         id: c.id,
@@ -250,14 +365,17 @@ export async function procesarAvisos(
         error_codigo: envio.error_code ?? "envio_fallido",
         retry_after_seconds: envio.retry_after,
         permanente: envio.permanente ?? false,
+        incierto: envio.uncertain ?? false,
       });
     } catch (_) { /* dejar el lease para reintento */ }
     if (!finalizado) {
       res.sin_lease++;
     } else if (envio.permanente) {
       res.fallidas++;
-    } else {
+    } else if (envio.uncertain) {
       res.revision++;
+    } else {
+      res.reintentables++;
     }
   }
   return res;
@@ -269,6 +387,10 @@ export async function handleUpdate(
   ctx: Context,
   upd: TelegramUpdate,
 ): Promise<void> {
+  // Datos del evento en curso. Se fijan en cada invocación: no queda estado
+  // entre eventos (la cita se vuelve a consultar en la base de datos).
+  ctx.update_id = upd.update_id;
+  ctx.contAvisos = 0;
   // /reintentar mueve la cola explícitamente y reporta; no procesa el lote normal.
   if (upd.message && (upd.message.text ?? "").trim() === "/reintentar") {
     await comandoReintentar(ctx, upd.message);
@@ -289,19 +411,19 @@ async function comandoReintentar(
   msg: NonNullable<TelegramUpdate["message"]>,
 ) {
   if (msg.chat.type !== "private") {
-    await ctx.tg.sendMessage({ chat_id: msg.chat.id, text: "Solo en chat privado." });
+    await enviarDirecto(ctx, msg.chat.id, "Solo en chat privado.");
     return;
   }
   if (msg.from.id !== ctx.adminUserId) {
-    await ctx.tg.sendMessage({ chat_id: msg.chat.id, text: "No autorizado." });
+    await enviarDirecto(ctx, msg.chat.id, "No autorizado.");
     return;
   }
   const r = await procesarAvisos(ctx, 10);
-  await ctx.tg.sendMessage({
-    chat_id: msg.chat.id,
-    text:
-      `Reintento: aceptadas ${r.aceptadas}, fallidas ${r.fallidas}, en revisión ${r.revision}.`,
-  });
+  await enviarDirecto(
+    ctx,
+    msg.chat.id,
+    `Reintento: aceptadas ${r.aceptadas}, fallidas ${r.fallidas}, en revisión ${r.revision}, reintentables ${r.reintentables}.`,
+  );
 }
 
 async function handleMessage(
@@ -311,7 +433,7 @@ async function handleMessage(
   const chat = msg.chat;
   if (chat.type !== "private") {
     // En grupos no se expone información ni se ejecutan acciones.
-    await ctx.tg.sendMessage({ chat_id: chat.id, text: "Solo en chat privado." });
+    await enviarDirecto(ctx, chat.id, "Solo en chat privado.");
     return;
   }
   const text = (msg.text ?? "").trim();
@@ -321,7 +443,7 @@ async function handleMessage(
   }
   if (text === "/pendientes") {
     if (msg.from.id !== ctx.adminUserId) {
-      await ctx.tg.sendMessage({ chat_id: chat.id, text: "No autorizado." });
+      await enviarDirecto(ctx, chat.id, "No autorizado.");
       return;
     }
     await showPendientes(ctx, msg.from.id, chat.id, 0);
@@ -343,6 +465,14 @@ async function handleCallback(
   try {
     await ctx.tg.answerCallbackQuery(cb.id);
   } catch (_) { /* ignorar */ }
+
+  // Chat privado únicamente: un botón pulsado en un grupo (por ejemplo, un
+  // mensaje reenviado) no ejecuta acciones ni expone datos.
+  const tipoChat = cb.message?.chat?.type;
+  if (tipoChat !== undefined && tipoChat !== "private") {
+    await enviarDirecto(ctx, chatId, "Solo en chat privado.");
+    return;
+  }
 
   const accion = parseCallback(cb.data);
   if (!accion) {
@@ -409,7 +539,7 @@ async function handleCallback(
 }
 
 async function noAutorizado(ctx: Context, chatId: number) {
-  await ctx.tg.sendMessage({ chat_id: chatId, text: "No autorizado." });
+  await enviarDirecto(ctx, chatId, "No autorizado.");
 }
 
 // ------------------------------- Pantallas --------------------------------
@@ -420,34 +550,47 @@ async function sendInicio(ctx: Context, chatId: number) {
     [{ text: "Agendar", callback_data: "agendar" }],
     [{ text: "Mi cita", callback_data: "mi_cita" }],
   ]);
-  await ctx.tg.sendMessage({
-    chat_id: chatId,
-    text: "Spa Manos y Pies\nServicios • Agendar • Mi cita",
-    reply_markup: kb,
-  });
+  await enviarDirecto(
+    ctx,
+    chatId,
+    "Spa Manos y Pies\nServicios • Agendar • Mi cita",
+    kb,
+  );
 }
 
 async function showServicios(ctx: Context, chatId: number) {
   const servicios = await ctx.repo.getServicios();
+  if (servicios.length === 0) {
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "No hay servicios disponibles por ahora.",
+    );
+    return;
+  }
   let txt = "Servicios (todos de 60 minutos):\n";
   for (const s of servicios) {
     txt += `- ${s.nombre}: $${s.precio_cop.toLocaleString("es-CO")} COP · ${s.duracion_min} min\n`;
   }
   const kb = buildKb([[{ text: "Volver al inicio", callback_data: "inicio" }]]);
-  await ctx.tg.sendMessage({ chat_id: chatId, text: txt, reply_markup: kb });
+  await enviarDirecto(ctx, chatId, txt, kb);
 }
 
 async function showAgendar(ctx: Context, chatId: number) {
   const servicios = await ctx.repo.getServicios();
+  if (servicios.length === 0) {
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "No hay servicios disponibles por ahora.",
+    );
+    return;
+  }
   const rows = servicios.map((s) => [
     { text: s.nombre, callback_data: `servicio:${s.id}` },
   ]);
   rows.push([{ text: "Volver al inicio", callback_data: "inicio" }]);
-  await ctx.tg.sendMessage({
-    chat_id: chatId,
-    text: "Selecciona un servicio:",
-    reply_markup: buildKb(rows),
-  });
+  await enviarDirecto(ctx, chatId, "Selecciona un servicio:", buildKb(rows));
 }
 
 async function elegirHorario(
@@ -468,35 +611,41 @@ async function elegirHorario(
     if (!porDia.has(d)) porDia.set(d, []);
     porDia.get(d)!.push({ id: h.id, inicio: h.inicio });
   }
-  const dias = Array.from(porDia.keys()).sort();
+  const dias = Array.from(porDia.keys()).sort().slice(0, DIAS_ATENCION);
+  // Un callback viejo puede apuntar a un día que ya está fuera de la ventana
+  // de siete días: ese día ya no se ofrece.
+  const permitidos = new Set(dias);
 
   if (!diaYmd) {
     if (dias.length === 0) {
-      await ctx.tg.sendMessage({
-        chat_id: chatId,
-        text: "No hay horarios disponibles por ahora.",
-      });
+      await enviarDirecto(
+        ctx,
+        chatId,
+        "No hay horarios disponibles por ahora.",
+      );
       return;
     }
     const rows = dias.map((d) => [
-      { text: d, callback_data: `dia:${servicioId}:${ymdToCb(d)}` },
+      { text: fmtDiaBogota(d), callback_data: `dia:${servicioId}:${ymdToCb(d)}` },
     ]);
     rows.push([{ text: "Volver", callback_data: "agendar" }]);
-    await ctx.tg.sendMessage({
-      chat_id: chatId,
-      text: "Elige un día de atención (hora de Bogotá):",
-      reply_markup: buildKb(rows),
-    });
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "Elige un día de atención (hora de Bogotá):",
+      buildKb(rows),
+    );
     return;
   }
 
   const lista = porDia.get(diaYmd);
-  if (!lista || lista.length === 0) {
+  if (!lista || lista.length === 0 || !permitidos.has(diaYmd)) {
     // Callback viejo o día ya no disponible.
-    await ctx.tg.sendMessage({
-      chat_id: chatId,
-      text: "Ese día ya no está disponible. Vuelve a elegir un día.",
-    });
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "Ese día ya no está disponible. Vuelve a elegir un día.",
+    );
     return;
   }
   lista.sort((a, b) => a.inicio.localeCompare(b.inicio));
@@ -504,11 +653,12 @@ async function elegirHorario(
     { text: horaBogota(h.inicio), callback_data: `horario:${servicioId}:${h.id}` },
   ]);
   rows.push([{ text: "Volver", callback_data: `servicio:${servicioId}` }]);
-  await ctx.tg.sendMessage({
-    chat_id: chatId,
-    text: `Horarios para ${diaYmd} (hora de Bogotá):`,
-    reply_markup: buildKb(rows),
-  });
+  await enviarDirecto(
+    ctx,
+    chatId,
+    `Horarios para ${fmtDiaBogota(diaYmd)} (hora de Bogotá):`,
+    buildKb(rows),
+  );
 }
 
 async function mostrarResumen(
@@ -524,17 +674,19 @@ async function mostrarResumen(
   ]);
   const s = servs.find((x) => x.id === servicioId);
   if (!s || !h) {
-    await ctx.tg.sendMessage({
-      chat_id: chatId,
-      text: "No encontramos ese servicio u horario. Vuelve a agendar.",
-    });
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "No encontramos ese servicio u horario. Vuelve a agendar.",
+    );
     return;
   }
   if (bogotaYmd(new Date(h.inicio)) <= bogotaYmd(ctx.now())) {
-    await ctx.tg.sendMessage({
-      chat_id: chatId,
-      text: "Ese horario ya pasó o es de hoy. Elige otro día.",
-    });
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "Ese horario ya pasó o es de hoy. Elige otro día.",
+    );
     return;
   }
   const txt =
@@ -543,7 +695,7 @@ async function mostrarResumen(
     [{ text: "Enviar solicitud", callback_data: `enviar:${servicioId}:${h.id}` }],
     [{ text: "Volver al inicio", callback_data: "inicio" }],
   ]);
-  await ctx.tg.sendMessage({ chat_id: chatId, text: txt, reply_markup: kb });
+  await enviarDirecto(ctx, chatId, txt, kb);
 }
 
 async function enviarSolicitud(
@@ -558,17 +710,30 @@ async function enviarSolicitud(
   // Revalidar en el servidor: no confiar en el callback.
   const h = await ctx.repo.getHorarioById(horarioId);
   if (!h) {
-    await ctx.tg.sendMessage({
-      chat_id: chatId,
-      text: "Ese horario no existe. Vuelve a agendar.",
-    });
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "Ese horario no existe. Vuelve a agendar.",
+    );
+    return;
+  }
+  // El servicio también se revalida: un callback manipulado con un servicio
+  // inexistente es un error de negocio (respuesta 200), no una falla técnica.
+  const servicios = await ctx.repo.getServicios();
+  if (!servicios.some((s) => s.id === servicioId)) {
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "Ese servicio no está disponible. Vuelve a agendar.",
+    );
     return;
   }
   if (bogotaYmd(new Date(h.inicio)) <= bogotaYmd(ctx.now())) {
-    await ctx.tg.sendMessage({
-      chat_id: chatId,
-      text: "Ese horario ya pasó o es de hoy. Elige otro día.",
-    });
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "Ese horario ya pasó o es de hoy. Elige otro día.",
+    );
     return;
   }
   const nombre = (nombreFrom ?? "").trim().slice(0, 80) || "Cliente";
@@ -583,54 +748,75 @@ async function enviarSolicitud(
     admin_user_id: ctx.adminUserId,
     admin_chat_id: ctx.adminChatId,
   });
-  await ctx.tg.sendMessage({
-    chat_id: chatId,
-    text: mensajeResultado("solicitar", res),
-  });
+  await enviarDirecto(ctx, chatId, mensajeResultado("solicitar", res));
 }
 
 async function showMiCita(ctx: Context, uid: number, chatId: number) {
   const c = await ctx.repo.getCitaActiva(uid);
   if (!c) {
     const kb = buildKb([[{ text: "Volver al inicio", callback_data: "inicio" }]]);
-    await ctx.tg.sendMessage({
-      chat_id: chatId,
-      text: "No tienes una cita activa.",
-      reply_markup: kb,
-    });
+    await enviarDirecto(
+      ctx,
+      chatId,
+      "No tienes una cita activa.",
+      kb,
+    );
     return;
   }
   const h = await ctx.repo.getHorarioById(c.horario_id);
-  const txt = `Mi cita\nID: ${c.id}\nEstado: ${c.estado}\nHorario: ${
+  // Una cita cuyo horario ya pasó no está vigente: no se ofrece cancelar
+  // (la RPC la cerraría) sino pedir una nueva, como pide la especificación.
+  const sinHorario = h === null;
+  const vencida = sinHorario ||
+    new Date(h!.inicio).getTime() <= ctx.now().getTime();
+  const estado = sinHorario
+    ? `${c.estado} (horario no disponible)`
+    : vencida
+    ? `${c.estado} (el horario ya pasó)`
+    : c.estado;
+  const txt = `Mi cita\nID: ${c.id}\nEstado: ${estado}\nHorario: ${
     h ? fmtFechaBogota(h.inicio) : c.horario_id
-  } (Bogotá)`;
+  } (Bogotá)${
+    vencida
+      ? "\nEsta cita ya no está vigente. Puedes solicitar un horario nuevo."
+      : ""
+  }`;
   const rows: Array<Array<{ text: string; callback_data: string }>> = [];
-  if (c.estado === "pendiente" || c.estado === "confirmada") {
+  if (vencida) {
+    rows.push([{ text: "Agendar", callback_data: "agendar" }]);
+  } else if (c.estado === "pendiente" || c.estado === "confirmada") {
     rows.push([{ text: "Cancelar cita", callback_data: `cancelar:${c.id}` }]);
   }
   rows.push([{ text: "Volver al inicio", callback_data: "inicio" }]);
-  await ctx.tg.sendMessage({
-    chat_id: chatId,
-    text: txt,
-    reply_markup: buildKb(rows),
-  });
+  await enviarDirecto(ctx, chatId, txt, buildKb(rows));
 }
 
 async function pedirCancelar(
   ctx: Context,
-  _uid: number,
+  uid: number,
   chatId: number,
   cid: number,
 ) {
+  // El botón se revalida: solo se pide la confirmación de una cita propia.
+  const cita = await ctx.repo.getCitaById(cid);
+  if (!cita) {
+    await enviarDirecto(ctx, chatId, "No encontramos esa cita.");
+    return;
+  }
+  if (cita.cliente_user_id !== uid) {
+    await noAutorizado(ctx, chatId);
+    return;
+  }
   const kb = buildKb([
     [{ text: "Sí, cancelar", callback_data: `cancelar_ok:${cid}` }],
     [{ text: "No", callback_data: "mi_cita" }],
   ]);
-  await ctx.tg.sendMessage({
-    chat_id: chatId,
-    text: "Confirma la cancelación. Esta acción libera el horario.",
-    reply_markup: kb,
-  });
+  await enviarDirecto(
+    ctx,
+    chatId,
+    "Confirma la cancelación. Esta acción libera el horario.",
+    kb,
+  );
 }
 
 async function cancelarCita(
@@ -642,7 +828,7 @@ async function cancelarCita(
 ) {
   const cita = await ctx.repo.getCitaById(cid);
   if (!cita) {
-    await ctx.tg.sendMessage({ chat_id: chatId, text: "No encontramos esa cita." });
+    await enviarDirecto(ctx, chatId, "No encontramos esa cita.");
     return;
   }
   // Permiso comprobado en el servidor por user_id, no por el botón.
@@ -660,10 +846,7 @@ async function cancelarCita(
     admin_user_id: ctx.adminUserId,
     admin_chat_id: ctx.adminChatId,
   });
-  await ctx.tg.sendMessage({
-    chat_id: chatId,
-    text: mensajeResultado("cancelar", res),
-  });
+  await enviarDirecto(ctx, chatId, mensajeResultado("cancelar", res));
 }
 
 async function resolverCitaAdmin(
@@ -684,10 +867,7 @@ async function resolverCitaAdmin(
     admin_user_id: ctx.adminUserId,
     admin_chat_id: ctx.adminChatId,
   });
-  await ctx.tg.sendMessage({
-    chat_id: chatId,
-    text: mensajeResultado(accion, res),
-  });
+  await enviarDirecto(ctx, chatId, mensajeResultado(accion, res, "admin"));
 }
 
 async function showPendientes(
@@ -697,16 +877,24 @@ async function showPendientes(
   offset: number,
 ) {
   const citas = await ctx.repo.getPendientes(offset, MAX_PENDIENTES);
-  let txt = citas.length
-    ? `Citas pendientes (desde ${offset}):\n`
-    : "No hay citas pendientes.";
+  // Solo citas futuras: una cita pendiente cuyo horario ya pasó no se
+  // ofrece para confirmar ni para rechazar.
+  const futuras: Array<{ cita: Cita; inicio: string }> = [];
   for (const c of citas) {
     const h = await ctx.repo.getHorarioById(c.horario_id);
-    txt += `- Cita ${c.id}: ${h ? fmtFechaBogota(h.inicio) : c.horario_id}\n`;
+    if (!h) continue;
+    if (new Date(h.inicio).getTime() <= ctx.now().getTime()) continue;
+    futuras.push({ cita: c, inicio: h.inicio });
   }
-  const rows = citas.map((c) => [
-    { text: `Confirmar ${c.id}`, callback_data: `confirmar:${c.id}` },
-    { text: `Rechazar ${c.id}`, callback_data: `rechazar:${c.id}` },
+  let txt = futuras.length
+    ? `Citas pendientes (desde ${offset}):\n`
+    : "No hay citas pendientes.";
+  for (const f of futuras) {
+    txt += `- Cita ${f.cita.id}: ${fmtFechaBogota(f.inicio)}\n`;
+  }
+  const rows = futuras.map((f) => [
+    { text: `Confirmar ${f.cita.id}`, callback_data: `confirmar:${f.cita.id}` },
+    { text: `Rechazar ${f.cita.id}`, callback_data: `rechazar:${f.cita.id}` },
   ]);
   if (citas.length === MAX_PENDIENTES) {
     rows.push([
@@ -714,12 +902,13 @@ async function showPendientes(
     ]);
   }
   rows.push([{ text: "Volver al inicio", callback_data: "inicio" }]);
-  await ctx.tg.sendMessage({ chat_id: chatId, text: txt, reply_markup: buildKb(rows) });
+  await enviarDirecto(ctx, chatId, txt, buildKb(rows));
 }
 
 function mensajeResultado(
   accion: "solicitar" | "confirmar" | "rechazar" | "cancelar",
   res: { estado?: unknown; [k: string]: unknown },
+  audiencia: "cliente" | "admin" = "cliente",
 ): string {
   const estado = String(res?.estado ?? "");
   const id = res?.cita_id !== undefined ? String(res.cita_id) : "";
@@ -740,9 +929,14 @@ function mensajeResultado(
     case "horario_ocupado":
       return "Ese horario ya está ocupado. Elige otro horario.";
     case "vencida":
-      return "Ese horario ya pasó. Elige otro horario.";
+      // El mismo desenlace se ve distinto según quién mira el mensaje.
+      return audiencia === "admin"
+        ? `El horario de la cita ${id} ya pasó: la cita se cerró y no se confirmó.`
+        : "Ese horario ya pasó. Elige otro horario.";
     case "estado_invalido":
-      return "La cita ya cambió de estado. Abre [Mi cita] para ver el estado actual.";
+      return audiencia === "admin"
+        ? `La cita ${id} ya cambió de estado (actual: ${String(res?.actual ?? "?")}).`
+        : "La cita ya cambió de estado. Abre [Mi cita] para ver el estado actual.";
     case "no_encontrada":
       return "No encontramos esa cita.";
     case "no_autorizado":

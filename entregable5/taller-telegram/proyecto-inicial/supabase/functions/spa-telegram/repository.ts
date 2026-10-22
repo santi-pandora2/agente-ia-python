@@ -64,8 +64,14 @@ export interface Repo {
     error_codigo?: string;
     retry_after_seconds?: number;
     permanente?: boolean;
+    incierto?: boolean;
   }): Promise<boolean>;
   getPendientes(offset: number, limit: number): Promise<Cita[]>;
+  registrarAvisoNavegacion(params: {
+    clave: string;
+    chat_id: number;
+    texto: string;
+  }): Promise<void>;
 }
 
 export function getSupabaseSecret(): string | undefined {
@@ -100,15 +106,15 @@ export function createRepo(url: string, serviceKey: string): Repo {
       if (error) throw error;
     },
     async getHorariosProximos(limitDias = 7) {
-      const hoy = new Date();
-      const zona = "America/Bogota";
-      const ymd = hoy.toLocaleDateString("sv-SE", { timeZone: zona }); // YYYY-MM-DD
+      // Solo horarios futuros. El límite exacto de días de atención y la
+      // exclusión de hoy los aplica el handler con el reloj de Bogotá
+      // (siete días de atención, sin hoy), no un desfase fijo en la consulta.
       const { data, error } = await client
         .from("spa_horarios")
         .select("*")
-        .gt("inicio", `${ymd}T23:59:59.999-05:00`) // excluir hoy aprox? spec: próximos 7 días excluyendo hoy
+        .gt("inicio", new Date().toISOString())
         .order("inicio")
-        .limit(limitDias * 10);
+        .limit(limitDias * 12);
       if (error) throw error;
       return (data || []) as Horario[];
     },
@@ -163,19 +169,46 @@ export function createRepo(url: string, serviceKey: string): Repo {
         p_error_codigo: params.error_codigo ?? null,
         p_retry_after_seconds: params.retry_after_seconds ?? null,
         p_permanente: params.permanente ?? false,
+        p_incierto: params.incierto ?? false,
       });
       if (error) throw error;
       return !!data;
     },
     async getPendientes(offset: number, limit: number) {
+      // Solo citas futuras: una cita pendiente cuyo horario ya pasó no se
+      // ofrece para confirmar ni para rechazar.
+      const { data: horarios, error: e1 } = await client
+        .from("spa_horarios")
+        .select("id")
+        .gt("inicio", new Date().toISOString());
+      if (e1) throw e1;
+      const ids = (horarios ?? []).map((h) => h.id as number);
+      if (ids.length === 0) return [];
       const { data, error } = await client
         .from("spa_citas")
         .select("*")
         .eq("estado", "pendiente")
+        .in("horario_id", ids)
         .order("id")
         .range(offset, offset + limit - 1);
       if (error) throw error;
       return (data || []) as Cita[];
+    },
+    async registrarAvisoNavegacion(params) {
+      // Aviso recuperable de un mensaje que falló al enviarse directamente.
+      // La clave deriva del update_id; no se guarda el cuerpo entrante.
+      const { error } = await client.from("spa_notificaciones").upsert(
+        {
+          clave: params.clave,
+          chat_id: params.chat_id,
+          payload: { tipo: "navegacion", texto: params.texto },
+          estado: "pendiente",
+          intentos: 0,
+          disponible_desde: new Date(Date.now() + 15000).toISOString(),
+        },
+        { onConflict: "clave", ignoreDuplicates: true },
+      );
+      if (error) throw error;
     },
   };
 }

@@ -43,6 +43,7 @@ class FakeRepo implements Repo {
   claims: NotifClaim[] = [];
   resultadosMutar: Array<{ estado: string; [k: string]: unknown }> = [];
   finalizarOk = true;
+  avisosNav: Array<{ clave: string; chat_id: number; texto: string }> = [];
   llamadas = {
     generar: 0,
     reclamar: [] as number[],
@@ -100,6 +101,13 @@ class FakeRepo implements Repo {
   }
   async getPendientes(offset: number, limit: number) {
     return this.pendientes.slice(offset, offset + limit);
+  }
+  async registrarAvisoNavegacion(params: {
+    clave: string;
+    chat_id: number;
+    texto: string;
+  }) {
+    this.avisosNav.push(params);
   }
 }
 
@@ -200,6 +208,7 @@ function updateCallback(
   uid: number,
   data: string,
   chatId = uid,
+  tipoChat = "private",
 ): TelegramUpdate {
   return {
     update_id,
@@ -207,7 +216,7 @@ function updateCallback(
       id: `cb-${update_id}`,
       from: { id: uid, first_name: "Cliente" },
       data,
-      message: { chat: { id: chatId } },
+      message: { chat: { id: chatId, type: tipoChat } },
     },
   };
 }
@@ -286,15 +295,86 @@ Deno.test("la hora se calcula en zona America/Bogota", () => {
 Deno.test("día y horario se muestran en Bogotá y excluyen hoy", async () => {
   const { tg, ctx } = nuevoContexto();
   await handleUpdate(ctx, updateCallback(4, 100, "servicio:1"));
-  let textos = ultimoKb(tg).map((b) => b.text);
-  assert(textos.includes("2026-10-15"), `Días mostrados: ${textos}`);
-  assert(textos.includes("2026-10-16"));
+  const botones = ultimoKb(tg);
+  const textos = botones.map((b) => b.text);
+  // Etiqueta legible del día (jue 15 oct) y el día exacto en el callback.
+  assert(textos.includes("jue 15 oct"), `Días mostrados: ${textos}`);
+  assert(textos.includes("vie 16 oct"));
   assert(!textos.includes("2026-10-13"), "no debe mostrar el día pasado");
   assert(!textos.includes("2026-10-14"), "no debe mostrar el día de hoy");
+  const datos = botones.map((b) => b.callback_data);
+  assert(
+    datos.includes("dia:1:20261015") && datos.includes("dia:1:20261016"),
+    `Callbacks de día: ${datos}`,
+  );
 
   await handleUpdate(ctx, updateCallback(5, 100, "dia:1:20261015"));
-  textos = ultimoKb(tg).map((b) => b.text);
-  assert(textos.includes("09:00") && textos.includes("10:00"), `Horas: ${textos}`);
+  const horas = ultimoKb(tg).map((b) => b.text);
+  assert(horas.includes("09:00") && horas.includes("10:00"), `Horas: ${horas}`);
+  assertIncluye(tg.enviados.at(-1)!.text, "Horarios para jue 15 oct");
+});
+
+Deno.test("solo se ofrecen siete días de atención", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  // Se agregan días hasta pasar la ventana de siete días de atención.
+  for (let d = 17; d <= 30; d++) {
+    const ymd = `2026-10-${d}`;
+    repo.horarios.push({
+      id: 200 + d,
+      inicio: `${ymd}T14:00:00.000Z`,
+      fin: `${ymd}T15:00:00.000Z`,
+    });
+  }
+  await handleUpdate(ctx, updateCallback(60, 100, "servicio:1"));
+  const dias = ultimoKb(tg).filter((b) => b.callback_data.startsWith("dia:"));
+  assert(dias.length === 7, `Días ofrecidos: ${dias.length}`);
+  const ultimo = dias.at(-1)!.callback_data;
+  assert(
+    ultimo === "dia:1:20261021",
+    `El último día debe ser el séptimo: ${ultimo}`,
+  );
+  assert(!dias.some((b) => b.callback_data.endsWith("20261022")));
+});
+
+Deno.test("un día fuera de la ventana de siete días ya no está disponible", async () => {
+  const { tg, ctx } = nuevoContexto();
+  // 2026-10-30 está fuera de los siete días que el bot ofrece.
+  await handleUpdate(ctx, updateCallback(61, 100, "dia:1:20261030"));
+  assertIncluye(tg.enviados.at(-1)!.text, "ya no está disponible");
+});
+
+Deno.test("Mi cita con horario vencido ofrece agendar y no cancelar", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  // Horario 99 = 2026-10-13, anterior a "hoy" (2026-10-14).
+  repo.citas = [citaBase({ horario_id: 99 })];
+  await handleUpdate(ctx, updateCallback(62, 100, "mi_cita"));
+  const texto = tg.enviados.at(-1)!.text;
+  assertIncluye(texto, "Mi cita");
+  assertIncluye(texto, "ya pasó");
+  assertIncluye(texto, "ya no está vigente");
+  const kb = ultimoKb(tg).map((b) => b.callback_data);
+  assert(kb.includes("agendar"), "debe ofrecer agendar otra");
+  assert(!kb.includes("cancelar:7"), "no debe ofrecer cancelar una cita vencida");
+});
+
+Deno.test("pedir la cancelación de una cita ajena no se confirma", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.citas = [citaBase({ cliente_user_id: 200, cliente_chat_id: 200 })];
+  await handleUpdate(ctx, updateCallback(63, 100, "cancelar:7"));
+  assertIncluye(tg.enviados.at(-1)!.text, "No autorizado");
+  assert(
+    tg.enviados.at(-1)!.reply_markup === undefined,
+    "no debe ofrecer confirmar la cancelación de otra persona",
+  );
+});
+
+Deno.test("el responsable ve un mensaje propio cuando la cita está vencida", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.resultadosMutar = [{ estado: "vencida", cita_id: 7 }];
+  await handleUpdate(ctx, updateCallback(64, ADMIN_USER, "confirmar:7"));
+  const texto = tg.enviados.at(-1)!.text;
+  assertIncluye(texto, "ya pasó");
+  assert(!texto.includes("Elige otro horario"), `Texto de clienta: ${texto}`);
 });
 
 Deno.test("fecha pasada y día de hoy no se ofrecen", async () => {
@@ -578,4 +658,140 @@ Deno.test("webhook procesa un evento válido con 200", async () => {
   const res = await handleRequest(req, depsWebhook(repo, tg));
   assert(res.status === 200, `Se esperaba 200, llegó ${res.status}`);
   assertIncluye(tg.enviados.at(-1)!.text, "Spa Manos y Pies");
+});
+
+Deno.test("aviso al responsable incluye botones Confirmar y Rechazar", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.claims = [claimBase({
+    chat_id: ADMIN_CHAT,
+    payload: {
+      tipo: "solicitada_admin",
+      cita_id: 42,
+      nombre: "Ana",
+      teclado: [[
+        { texto: "Confirmar", callback_data: "confirmar:42" },
+        {
+          texto: "Rechazar y ofrecer nueva solicitud",
+          callback_data: "rechazar:42",
+        },
+      ]],
+    },
+  })];
+  const r = await procesarAvisos(ctx, 10);
+  assert(r.aceptadas === 1, `Se esperaba 1 aceptada, hubo ${r.aceptadas}`);
+  const datos = ultimoKb(tg).map((b) => b.callback_data);
+  assert(
+    datos.includes("confirmar:42") && datos.includes("rechazar:42"),
+    `Faltan botones del aviso: ${datos}`,
+  );
+  assertIncluye(tg.enviados.at(-1)!.text, "Nueva solicitud");
+});
+
+Deno.test("el teclado manipulado se descarta y el aviso sale sin botones", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.claims = [claimBase({
+    chat_id: ADMIN_CHAT,
+    payload: {
+      tipo: "solicitada_admin",
+      cita_id: 42,
+      teclado: [[
+        { texto: "Confirmar", callback_data: "admin_todo:42" },
+        { texto: "Malo", callback_data: "x" },
+      ]],
+    },
+  })];
+  await procesarAvisos(ctx, 10);
+  const markup = tg.enviados.at(-1)!.reply_markup;
+  assert(markup === undefined, `No debía enviar teclado manipulado: ${JSON.stringify(markup)}`);
+});
+
+Deno.test("aviso fallido recuperable queda como reintentable", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.claims = [claimBase()];
+  tg.cola = [{
+    ok: false,
+    error_code: "telegram_5xx",
+    retry_after: 5,
+  }];
+  const r = await procesarAvisos(ctx, 10);
+  assert(r.reintentables === 1, `Se esperaba 1 reintentable, hubo ${r.reintentables}`);
+  assert(r.aceptadas === 0 && r.fallidas === 0 && r.revision === 0);
+  const fin = repo.llamadas.finalizar.at(-1)!;
+  assert(fin.enviada === false, "no debe marcarse como enviada");
+  assert(fin.retry_after_seconds === 5);
+  assert(fin.incierto !== true, "un 5xx no es incierto");
+});
+
+Deno.test("aviso con error incierto queda en revisión y se marca incierto", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.claims = [claimBase()];
+  tg.cola = [{ ok: false, error_code: "timeout", uncertain: true }];
+  const r = await procesarAvisos(ctx, 10);
+  assert(r.revision === 1, `Se esperaba 1 en revisión, hubo ${r.revision}`);
+  assert(r.reintentables === 0);
+  const fin = repo.llamadas.finalizar.at(-1)!;
+  assert(fin.incierto === true, "debe informar incierto al servidor");
+  assert(fin.enviada === false);
+});
+
+Deno.test("/reintentar reporta los reintentables", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.claims = [claimBase()];
+  tg.cola = [{ ok: false, error_code: "telegram_5xx" }];
+  await handleUpdate(ctx, updateTexto(31, ADMIN_USER, "/reintentar"));
+  assertIncluye(tg.enviados.at(-1)!.text, "reintentables 1");
+});
+
+Deno.test("un callback en un grupo no ejecuta acciones ni expone datos", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.citas = [citaBase()];
+  await handleUpdate(ctx, updateCallback(40, ADMIN_USER, "confirmar:7", -100, "group"));
+  assertIncluye(tg.enviados.at(-1)!.text, "Solo en chat privado.");
+  assert(repo.llamadas.mutar.length === 0, "no debe confirmar en un grupo");
+  assert(tg.answers.length === 1, "debe responder el callback");
+});
+
+Deno.test("un callback en un grupo no cancela la cita de la clienta", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  repo.citas = [citaBase()];
+  await handleUpdate(ctx, updateCallback(41, 100, "cancelar_ok:7", -100, "group"));
+  assertIncluye(tg.enviados.at(-1)!.text, "Solo en chat privado.");
+  assert(repo.llamadas.mutar.length === 0, "no debe cancelar en un grupo");
+});
+
+Deno.test("servicio inexistente es un error de negocio, no una falla técnica", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  await handleUpdate(ctx, updateCallback(42, 100, "enviar:999999:25"));
+  assertIncluye(tg.enviados.at(-1)!.text, "Ese servicio no está disponible");
+  assert(repo.llamadas.mutar.length === 0, "no debe llamar la RPC");
+});
+
+Deno.test("un mensaje directo fallido queda como aviso recuperable", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  tg.cola = [{ ok: false, error_code: "403", permanente: true }];
+  await handleUpdate(ctx, updateTexto(43, 100, "/start"));
+  assert(repo.avisosNav.length === 1, `Debe quedar un aviso: ${repo.avisosNav.length}`);
+  const aviso = repo.avisosNav[0];
+  assert(aviso.clave.startsWith("navegacion:43:"), `Clave inesperada: ${aviso.clave}`);
+  assert(aviso.chat_id === 100);
+  assertIncluye(aviso.texto, "Spa Manos y Pies");
+  assert(
+    !JSON.stringify(aviso).includes("/start"),
+    "no debe registrar el cuerpo entrante",
+  );
+});
+
+Deno.test("/pendientes no muestra citas cuyo horario ya pasó", async () => {
+  const { repo, tg, ctx } = nuevoContexto();
+  // Cita 7 con horario 25 (futuro) y cita 8 con horario 99 (2026-10-13, pasado).
+  repo.pendientes = [
+    citaBase({ id: 7, horario_id: 25 }),
+    citaBase({ id: 8, horario_id: 99 }),
+  ];
+  await handleUpdate(ctx, updateTexto(44, ADMIN_USER, "/pendientes"));
+  const texto = tg.enviados.at(-1)!.text;
+  assertIncluye(texto, "Cita 7");
+  assert(!texto.includes("Cita 8"), `No debe listar la cita vencida: ${texto}`);
+  const kb = ultimoKb(tg).map((b) => b.callback_data);
+  assert(kb.includes("confirmar:7") && !kb.includes("confirmar:8"));
 });
