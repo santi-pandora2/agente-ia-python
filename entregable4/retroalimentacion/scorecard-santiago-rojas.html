@@ -27,24 +27,24 @@
       <div class="seal"><strong>COGNITUS</strong><span>ENTREGABLE 4</span><em>REVISADO</em><small>CURSO AGENTES IA</small></div>
       <div class="eyebrow">Revisión docente + análisis estático del repositorio</div>
       <h1>Santiago Rojas</h1>
-      <p>Extensión local para leer Ferricentro. Evaluación conjunta con los seis criterios globales del Módulo 4.</p>
-      <div class="meta"><span class="pill">Revisado por el agente de IA y por Pablo Velásquez</span><span class="pill">Fecha: 21 de octubre de 2026</span><span class="pill">Commit 73f1aa6</span></div>
+      <p>Extensión local para leer Ferricentro. Evaluación conjunta: cuatro criterios técnicos y dos plus opcionales.</p>
+      <div class="meta"><span class="pill">Revisado por el agente de IA y por Pablo Velásquez</span><span class="pill">Fecha: 22 de octubre de 2026</span><span class="pill">Commit 73f1aa6</span></div>
     </header>
     <main>
-      <div class="notice"><b>i</b><p><strong>Resultado central.</strong> La extensión se ve bien y el video demuestra un script que la ejecuta. Ese flujo descarga sin revisión en pantalla. El CSV versionado tiene solo 2 productos: no alcanza el mínimo de 25. No se entregó un skill reutilizable de Módulo 4 ni hay paginación automática.</p></div>
+      <div class="notice"><b>i</b><p><strong>Resultado central.</strong> La extensión se ve bien y el video demuestra un script que la ejecuta. Ese flujo descarga sin revisión en pantalla. El CSV versionado tiene solo 2 productos: no alcanza el mínimo de 25. No hay paginación automática. Un skill propio habría sido un plus opcional, no un requisito de entrega.</p></div>
 
       <section class="section"><div class="label">Revisión automática</div><h2>Fortalezas y puntos por resolver</h2><div class="grid">
         <article class="card good"><h3>Extensión bien presentada</h3><span class="status">Código + revisión docente</span><p>La extensión se ve bien. Incluye Manifest V3, popup, extractor y vista previa; el modo manual comienza con «Analizar página actual». Limita hosts a Ferricentro y usa <code>activeTab</code>, <code>scripting</code> y <code>downloads</code>.</p><div class="evidence">manifest.json · popup.html/js · capturas · <a href="https://www.loom.com/share/bcac849df74443cf8d6d4dac504ca651">ver video ↗</a></div></article>
         <article class="card warn"><h3>Inventario entregado: 2 productos</h3><span class="status">Bajo el mínimo de 25</span><p><code>productos_erp.csv</code> tiene 2 filas de datos: una es de Ferreglobal y carece de SKU; ambas dejan inventario vacío. El README reporta 20 productos en Combos y una captura muestra 1.164 en «Productos», pero esos resultados no están entregados como archivo de inventario.</p><div class="evidence">árbol del commit · productos_erp.csv · README.md · captura</div></article>
-        <article class="card warn"><h3>Proceso sin skill reutilizable</h3><span class="status">Parcial</span><p>El TXT describe siete pasos de observación y extracción, pero no entrega un skill OpenWork de Módulo 4 que use el navegador para construir la extensión. Los <code>SKILL.md</code> localizados pertenecen a otros ejercicios.</p><div class="evidence">proceso-extension-ferricentro.txt · árbol completo del commit</div></article>
+        <article class="card good"><h3>Proceso de siete pasos documentado</h3><span class="status">Evidencia valorada</span><p>El TXT describe la observación del sitio y la extracción en siete pasos. Sirve para entender cómo se construyó la extensión. No hay un skill propio para este módulo, pero eso solo deja sin acreditar un plus opcional.</p><div class="evidence">proceso-extension-ferricentro.txt · árbol completo del commit</div></article>
         <article class="card warn"><h3>Llave de firma incluida</h3><span class="status">Revisión de archivo</span><p>El repositorio contiene <code>extension-ferricentro.pem</code> con marcador de llave privada. Si se utilizó para firmar el CRX, conviene reemplazarla y retirar el material de firma del repositorio antes de reutilizarla o compartir la extensión.</p><div class="evidence">entregable4/extension-ferricentro.pem · contenido de la llave no reproducido</div></article>
       </div></section>
 
       <section class="human"><div class="human-head"><h3>Observación del video</h3><span class="pending">Incorporada</span></div><p><strong>La extensión se ve bien.</strong> En el <a href="https://www.loom.com/share/bcac849df74443cf8d6d4dac504ca651">video</a> se usa un script para abrirla, analizar la página y descargar el CSV. Esa automatización puede ser útil, pero la demostración no usa la interfaz del popup para dar al usuario control sobre la revisión y la descarga. La paginación no está soportada automáticamente: cada ejecución procesa solo la página abierta.</p></section>
 
-      <section class="section"><div class="label">Rúbrica global del Módulo 4</div><h2>Seis criterios de revisión</h2><table class="check"><thead><tr><th>Criterio</th><th>Resultado y evidencia</th></tr></thead><tbody>
-        <tr><td>1 · Skill OpenWork reutilizable</td><td><strong>Sin evidencia.</strong> No hay skill de Módulo 4 invocable con navegador. El TXT de proceso no lo sustituye.</td></tr>
-        <tr><td>2 · Pasos del skill para la extensión</td><td><strong>Parcial.</strong> El TXT ordena siete pasos para observar el sitio y extraer datos, pero no muestra su ejecución mediante un skill que construya la extensión.</td></tr>
+      <section class="section"><div class="label">Rúbrica global del Módulo 4</div><h2>Cuatro técnicos + dos plus opcionales</h2><table class="check"><thead><tr><th>Criterio</th><th>Resultado y evidencia</th></tr></thead><tbody>
+        <tr><td>1 · Plus: skill reutilizable</td><td><strong>Plus no presentado; sin penalización.</strong> No hay skill propio de Módulo 4; el paquete mínimo publicado no lo exige.</td></tr>
+        <tr><td>2 · Plus: pasos del skill</td><td><strong>Plus no presentado.</strong> El TXT sí ordena siete pasos de observación y extracción, y se valora como evidencia del proceso.</td></tr>
         <tr><td>3 · Extensión Chrome</td><td><strong>Parcial.</strong> Manifest V3, popup, extractor y vista previa; se ve bien en el video. El script demostrado descarga automáticamente, y el código permite exportar aunque haya precio ambiguo.</td></tr>
         <tr><td>4 · Cualquier categoría fácilmente</td><td><strong>Parcial.</strong> El popup analiza la pestaña activa y el script admite una URL por corrida (Combos por defecto). No hay selector de categorías ni procesamiento en lote.</td></tr>
         <tr><td>5 · Paginación y descarga total</td><td><strong>No cumple.</strong> Extractor, popup y script leen una página por ejecución. No siguen «Siguiente», no consolidan páginas y no verifican el total de la categoría.</td></tr>
@@ -52,9 +52,9 @@
       </tbody></table></section>
 
       <div class="trace"><p><strong>Fuentes:</strong> <a href="https://github.com/santi-pandora2/agente-ia-python/tree/73f1aa6663d70c14df8c709018828b00ed1ba1f9/entregable4">repositorio del entregable</a> · <a href="https://cursoia.cognitus.org/entregables/modulo-4/index.html">consigna vigente</a> · <a href="https://www.loom.com/share/bcac849df74443cf8d6d4dac504ca651">video</a>.</p><p><strong>Método:</strong> lectura estática del commit indicado, conteo independiente del CSV y revisión de capturas. La observación del video se contrastó con el código; no ejecuté el repositorio ni probé la extensión en vivo.</p></div>
-      <div class="next"><h3>Prioridades de mejora</h3><p>1. Entregar el skill OpenWork reutilizable y los pasos que usa para construir la extensión. 2. Permitir seleccionar cualquier categoría y recorrer todas sus páginas, con CSV consolidado. 3. Incluir un inventario real de al menos 25 productos, idealmente más de 100. 4. Demostrar el popup y revisar datos ambiguos antes de descargar. 5. Retirar y reemplazar la llave privada de firma.</p></div>
+      <div class="next"><h3>Prioridades de mejora</h3><p>1. Permitir seleccionar cualquier categoría y recorrer todas sus páginas, con CSV consolidado. 2. Incluir un inventario real de al menos 25 productos, idealmente más de 100. 3. Demostrar el popup y revisar datos ambiguos antes de descargar. 4. Retirar y reemplazar la llave privada de firma.</p></div>
     </main>
-    <footer><strong>Cognitus · Módulo 4</strong><span>Revisado por el agente de IA y por Pablo Velásquez · 21 de octubre de 2026</span><span>Sin nota numérica</span></footer>
+    <footer><strong>Cognitus · Módulo 4</strong><span>Revisado por el agente de IA y por Pablo Velásquez · 22 de octubre de 2026</span><span>Sin nota numérica</span></footer>
   </article>
 </body>
 </html>
