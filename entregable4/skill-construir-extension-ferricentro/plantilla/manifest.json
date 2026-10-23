@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Ferricentro - Extractor de Inventario",
+  "version": "1.1.0",
+  "description": "Extensión local para recorrer listados paginados autorizados de ferricentro.com y generar catálogo, actualización POS y excepciones en CSV UTF-8. No envía datos a terceros.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://ferricentro.com/*",
+    "https://*.ferricentro.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Analizar listado completo"
+  },
+  "content_scripts": [],
+  "icons": {}
+}

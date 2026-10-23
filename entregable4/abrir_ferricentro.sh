@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Abre Chrome con la extensión Ferricentro, la carga y EJECUTA la extracción
-# (analiza la página y descarga el CSV), todo en una sola ejecución.
+# (recorre el listado y descarga catálogo, POS y excepciones), todo en una sola ejecución.
 #
 # Uso:    ./abrir_ferricentro.sh [URL]
 #         ./abrir_ferricentro.sh https://ferricentro.com/combos
@@ -146,7 +146,7 @@ if [ -z "$ID" ]; then
 fi
 
 if [ "$AUTO" = "1" ]; then
-  echo "Ejecutando la extensión (analizar + descargar CSV)..."
+  echo "Ejecutando la extensión (recorrer páginas + descargar catálogo, POS y excepciones)..."
   python3 "$DIR/usar_extension.py" --port "$PUERTO" --ext-id "$ID" --url "$URL"
 fi
 

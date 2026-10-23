@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extractor Ferricentro</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Extractor de Inventario - Ferricentro</h1>
+    </header>
+    
+    <section class="controls">
+      <button id="btnAnalizar" type="button" title="Analizar listado y recorrer todas las páginas (acción explícita)">
+        Analizar listado completo
+      </button>
+    </section>
+    
+    <section class="status">
+      <h2>Estado de ejecución</h2>
+      <div id="estado" aria-live="polite">Listo. Presiona "Analizar listado completo" para comenzar.</div>
+    </section>
+    
+    <section class="resultados">
+      <h2>Resultados</h2>
+      <div class="info-line">
+        <span>Productos encontrados:</span>
+        <span id="cantidad">0</span>
+      </div>
+      <div class="info-line">
+        <span>Páginas recorridas:</span>
+        <span id="paginas">0</span>
+      </div>
+      <div class="info-line">
+        <span>Vista previa:</span>
+        <span id="paginaActual">0</span>
+        <span>de</span>
+        <span id="paginaTotal">0</span>
+      </div>
+      <div class="pager">
+        <button id="btnPrev" type="button" disabled>Anterior</button>
+        <button id="btnNext" type="button" disabled>Siguiente</button>
+      </div>
+    </section>
+
+    <section class="paginacion">
+      <h2>Paginación del listado</h2>
+      <div id="paginasRecorridas">Sin páginas recorridas.</div>
+    </section>
+    
+    <section class="avisos">
+      <h2>Avisos</h2>
+      <div id="avisos" aria-live="polite">Sin avisos.</div>
+    </section>
+    
+    <section class="preview">
+      <h2>Vista previa (primeros registros)</h2>
+      <div class="table-wrapper">
+        <table id="tablaPreview">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>SKU</th>
+              <th>Título</th>
+              <th>Precio oferta</th>
+              <th>% Desc.</th>
+              <th>URL producto</th>
+              <th>Imagen URL</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPreview"></tbody>
+        </table>
+      </div>
+    </section>
+    
+    <section class="export">
+      <button id="btnDescargar" type="button" disabled title="Habilitado solo después de revisar la vista previa">
+        Descargar catálogo + POS + excepciones
+      </button>
+    </section>
+    
+    <footer>
+      <small>Solo dominio autorizado: *.ferricentro.com. CSV UTF-8. Sin telemetría. Acción explícita.</small>
+    </footer>
+  </main>
+  
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

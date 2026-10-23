@@ -140,3 +140,57 @@ footer {
   text-align: center;
   color: #666;
 }
+
+.pager {
+  display: flex;
+  gap: 8px;
+}
+
+.pager button {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+#paginasRecorridas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.pagina-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+.pagina-item:last-child {
+  border-bottom: none;
+}
+
+.pagina-info span {
+  color: #666;
+  margin-left: 6px;
+}
+
+.pagina-nav a {
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pagina-nav a:hover {
+  text-decoration: underline;
+}
+
+.pagina-nav .ultima {
+  color: #777;
+  font-size: 12px;
+  white-space: nowrap;
+}

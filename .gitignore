@@ -1,1 +1,5 @@
+extension-ferricentro.pem
 entregable4/.perfil-chrome/
+*.pem
+*.key
+

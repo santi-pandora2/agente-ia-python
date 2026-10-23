@@ -9,18 +9,18 @@
 <body>
   <main class="container">
     <header>
-      <h1>Extractor de Productos - Ferricentro</h1>
+      <h1>Extractor de Inventario - Ferricentro</h1>
     </header>
     
     <section class="controls">
-      <button id="btnAnalizar" type="button" title="Analizar página actual (acción explícita)">
-        Analizar página actual
+      <button id="btnAnalizar" type="button" title="Analizar listado y recorrer todas las páginas (acción explícita)">
+        Analizar listado completo
       </button>
     </section>
     
     <section class="status">
       <h2>Estado de ejecución</h2>
-      <div id="estado" aria-live="polite">Listo. Presiona "Analizar página actual" para comenzar.</div>
+      <div id="estado" aria-live="polite">Listo. Presiona "Analizar listado completo" para comenzar.</div>
     </section>
     
     <section class="resultados">
@@ -29,6 +29,25 @@
         <span>Productos encontrados:</span>
         <span id="cantidad">0</span>
       </div>
+      <div class="info-line">
+        <span>Páginas recorridas:</span>
+        <span id="paginas">0</span>
+      </div>
+      <div class="info-line">
+        <span>Vista previa:</span>
+        <span id="paginaActual">0</span>
+        <span>de</span>
+        <span id="paginaTotal">0</span>
+      </div>
+      <div class="pager">
+        <button id="btnPrev" type="button" disabled>Anterior</button>
+        <button id="btnNext" type="button" disabled>Siguiente</button>
+      </div>
+    </section>
+
+    <section class="paginacion">
+      <h2>Paginación del listado</h2>
+      <div id="paginasRecorridas">Sin páginas recorridas.</div>
     </section>
     
     <section class="avisos">
@@ -43,6 +62,7 @@
           <thead>
             <tr>
               <th>#</th>
+              <th>SKU</th>
               <th>Título</th>
               <th>Precio oferta</th>
               <th>% Desc.</th>
@@ -57,12 +77,12 @@
     
     <section class="export">
       <button id="btnDescargar" type="button" disabled title="Habilitado solo después de revisar la vista previa">
-        Descargar CSV
+        Descargar catálogo + POS + excepciones
       </button>
     </section>
     
     <footer>
-      <small>Solo dominio autorizado: *.ferricentro.com. Sin telemetría. Acción explícita.</small>
+      <small>Solo dominio autorizado: *.ferricentro.com. CSV UTF-8. Sin telemetría. Acción explícita.</small>
     </footer>
   </main>
   

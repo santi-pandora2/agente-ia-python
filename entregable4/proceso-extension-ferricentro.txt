@@ -3,7 +3,7 @@ PROCESO DE EXTRACCIÓN - EXTENSIÓN FERRICENTRO
 
 OBJETIVO Y ALCANCE
 ------------------
-Observar y documentar el proceso de extracción de productos visibles desde listados de Ferricentro (https://ferricentro.com), específicamente en categoría/autorizada, para generar una extensión local Manifest V3 que extraiga únicamente datos necesarios para los campos CSV solicitados.
+Observar y documentar el proceso de extracción de productos visibles desde listados de Ferricentro (https://ferricentro.com), específicamente en categoría/autorizada, para generar una extensión local Manifest V3 que recorra todas las páginas del listado y exporte el inventario dividido en catálogo de proveedor, actualización POS y excepciones (SKU incluido, CSV UTF-8).
 
 URL BASE AUTORIZADA: https://ferricentro.com
 DOMINIO AUTORIZADO: *.ferricentro.com
@@ -26,7 +26,7 @@ PASO 2 - Esperar estabilización DOM
 - Número: 2
 - Nombre: Esperar renderizado
 - Página/estado: Listado visible con tarjetas de producto
-- Acción: Esperar a que elementos de grid/lista estén presentes (no scroll infinito)
+- Acción: Esperar a que elementos de grid/lista estén presentes. Sin scroll infinito: la paginación se recorre con los enlaces oficiales del listado
 - Resultado esperado: Tarjetas visibles (productos)
 - Condición de parada/error: Estructura no coincide con documentada -> error claro, no exportar
 
@@ -34,7 +34,7 @@ PASO 3 - Activación manual (requerida)
 - Número: 3
 - Nombre: Activar extensión
 - Página/estado: Pestaña activa en dominio autorizado
-- Acción: Usuario pulsa botón "Analizar página actual" (acción explícita). No extracción automática
+- Acción: Usuario pulsa botón "Analizar listado completo" (acción explícita). No extracción automática
 - Resultado esperado: Extensión lee solo DOM visible, sin ejecutar scripts de página
 - Condición de parada/error: Pestaña no autorizada -> mostrar error
 
@@ -46,28 +46,28 @@ PASO 4 - Detectar estructura de listado
 - Resultado esperado: Contenedor identificado con N ítems
 - Condición de parada/error: 0 coincidencias y página no compatible -> error "Página no compatible con estructura documentada"
 
-PASO 5 - Extraer tarjetas de producto (visibles)
+PASO 5 - Extraer tarjetas de producto (paginación automática)
 - Número: 5
-- Nombre: Recorrer ítems visibles
-- Página/estado: Primera página visible
-- Acción: Iterar sobre cada ítem de producto visible. Extraer campos uno a uno. Solo lectura
-- Resultado esperado: Lista de productos con campos extraídos
-- Condición de parada/error: Campo crítico ambiguo -> marcar aviso, no exportar incompleto como válido
+- Nombre: Recorrer páginas e ítems
+- Página/estado: Página actual y todas las siguientes del mismo listado
+- Acción: Iterar sobre cada ítem de producto visible. Extraer campos uno a uno, incluido SKU. Seguir el enlace "Siguiente" del listado y consolidar sin duplicados. Solo lectura
+- Resultado esperado: Lista consolidada de productos de todas las páginas, con campos y SKU
+- Condición de parada/error: Campo crítico ambiguo -> marcar aviso; si la paginación sale del dominio autorizado o falla -> detener y no exportar incompleto como válido
 
 PASO 6 - Validar y generar vista previa
 - Número: 6
 - Nombre: Vista previa
 - Página/estado: Datos extraídos
-- Acción: Mostrar cantidad, tabla primeros registros, avisos faltantes/ambiguos
-- Resultado esperado: Vista previa mostrada. Botón "Descargar CSV" habilitado solo tras revisión
+- Acción: Mostrar cantidad, páginas recorridas, total declarado, lista de páginas con enlace "Siguiente" (o "Última página"), navegación de la vista previa (Anterior/Siguiente, 20 por página), SKU y avisos faltantes/ambiguos
+- Resultado esperado: Vista previa paginada y paginación del listado visible. Botón "Descargar catálogo + POS + excepciones" habilitado solo tras revisión
 - Condición de parada/error: Datos incompletos sin justificación -> bloquear descarga
 
-PASO 7 - Exportar CSV
+PASO 7 - Exportar catálogo, actualización POS y excepciones
 - Número: 7
-- Nombre: Descargar CSV
+- Nombre: Descargar catálogo + POS + excepciones
 - Página/estado: Vista previa validada
-- Acción: Generar CSV UTF-8 con encabezados fijos, escapar comas/comillas correctamente
-- Resultado esperado: Archivo descargado con fecha_consulta y fuente_url
+- Acción: Generar tres CSV UTF-8: catálogo maestro, actualización POS (filas válidas) y excepciones (SKU faltante/duplicado, nombre o precio inválido). Escapar comas/comillas correctamente
+- Resultado esperado: catalogo_proveedor.csv, actualizacion_pos.csv y excepciones.csv descargados
 - Condición de parada/error: Fallo en generación -> mostrar error
 
 INVENTARIO DE ELEMENTOS, ETIQUETAS Y SELECTORES
@@ -82,7 +82,7 @@ CONTENEDOR DE LISTADO
 - Selector principal: Verificar en página actual (usar elementos observados). En listado Combos: área de productos dentro de main
 - Selector alternativo: Contenedor que agrupa enlaces con clase de producto
 - Alcance: Dentro de <main> o área de listado
-- Coincidencias: Depende página (21 en Combos observado)
+- Coincidencias: Depende página (19 en Combos y 115 en Perforación, observado 2026-10-23)
 - Acción: Leer
 - Posibles fallas: Cambio de clases, vista lista/grid
 
@@ -106,6 +106,18 @@ TÍTULO DEL PRODUCTO
 - Alcance: Tarjeta de producto
 - Acción: Leer
 - Campo CSV: titulo
+
+SKU DEL PRODUCTO
+- Nombre humano: SKU del producto
+- Etiqueta HTML: form / span
+- Atributo: data-product-sku
+- Patrón: Texto visible "SKU: <código>" (respaldo)
+- Selector principal: form[data-product-sku] dentro de la tarjeta
+- Selector alternativo: .product-item-row_label / texto con patrón SKU:\s*([A-Za-z0-9._\/-]+)
+- Alcance: Tarjeta
+- Acción: Leer
+- Campo CSV: sku (vacío solo si no está visible; no inventar)
+- Notas: SKU confirmado en https://ferricentro.com/combos y categorías paginadas (2026-10-23)
 
 URL DEL PRODUCTO
 - Nombre humano: Enlace a ficha de producto
@@ -158,18 +170,27 @@ VERIFICACIÓN DE COMPATIBILIDAD
 - Página compatible si: existen contenedor + >=1 tarjeta + título + enlace producto detectables según estructura observada
 - Página no compatible: no coincide -> error claro, no exportar incompletos
 - Cero resultados: mostrar "0 productos encontrados", no habilitar descarga
+- Paginación: continuar mientras exista enlace siguiente del mismo listado; detenerse en la última página, si una página no aporta productos nuevos o al alcanzar 500 páginas
+- Total declarado: si la categoría declara N productos y se extraen menos, mostrar aviso con la diferencia
 - Campos faltantes/ambiguos: listados en avisos
 
 ESCAPEO CSV
 -----------
-- Encabezados estables: titulo, precio_oferta, descuento_porcentaje, url_producto, imagen_url, fecha_consulta, fuente_url
+- Catálogo proveedor: proveedor, sku, nombre, precio_cop, inventario, activo, url_producto, imagen_url, descuento_porcentaje, fecha_consulta, fuente_url
+  - proveedor = Ferricentro; inventario = vacío (el listado no expone existencias); activo = true
+- Actualización POS: sku, nombre, precio_cop, inventario, activo, accion, proveedor, url_producto
+  - Solo filas válidas (SKU único, nombre y precio válidos); accion = UPSERT
+- Excepciones: sku, nombre, precio_cop, motivo, url_producto, fuente_url
+  - Filas con SKU faltante/duplicado, nombre faltante o precio faltante/no numérico/no positivo
+- División: catálogo = actualización POS + excepciones
 - UTF-8 sin BOM
 - Comillas dobles escapadas como "" 
 - Campos con coma/comilla/Salto línea entrecomillados
 
 PRUEBAS DOCUMENTADAS
 --------------------
-- Compatible: listado Combos https://ferricentro.com/combos (verificado 2026-10-16: 20/20 tarjetas)
+- Compatible sin paginación: listado Combos https://ferricentro.com/combos (verificado 2026-10-23: 19/19 tarjetas, 1 página)
+- Compatible con paginación: https://ferricentro.com/productos/herramienta-electrica/perforacion (verificado 2026-10-23: 115/115 tarjetas, 5 páginas, 115 SKU; catalogo_proveedor.csv 115 filas, actualizacion_pos.csv 115 filas y excepciones.csv 0 filas)
 - No compatible: página sin listado (verificado 2026-10-16 con /checkout/cart: error claro, sin exportar)
 - Cero resultados: listado sin productos
 - Campos faltantes: tarjeta sin descuento (verificado: campo vacío, no inventado)
@@ -178,20 +199,28 @@ PRUEBAS DOCUMENTADAS
 AUTOMATIZACIÓN LOCAL (launcher)
 ------------------------------
 - abrir_ferricentro.sh abre Chrome con perfil local, carga la extensión sin empaquetar y
-  ejecuta la misma lógica del botón "Analizar página actual" (chrome.scripting.executeScript
+  ejecuta la misma lógica del botón "Analizar listado completo" (chrome.scripting.executeScript
   + chrome.downloads) desde el contexto de la extensión.
 - La acción explícita es la ejecución del script por parte del usuario. No hay content script
   automático en la página, no hay extracción al cargar el sitio, no se amplía el alcance:
-  mismos dominios autorizados, misma primera página visible, mismos campos y validaciones.
+  mismos dominios autorizados, todas las páginas oficiales del listado, mismos campos y validaciones.
+- Se descargan catalogo_proveedor.csv, actualizacion_pos.csv y excepciones.csv (UTF-8); los tres
+  quedan versionados en el proyecto y se valida que catálogo = POS + excepciones.
+- El skill permite elegir cualquier categoría pública (menú, índice, nombre, ruta o URL) y
+  recorre todas sus páginas con la misma lógica de paginación automática.
+- El skill reutilizable (plantilla, lanzador, scripts de prueba y validación) se entrega en
+  skill-construir-extension-ferricentro/; la fuente local está en ~/.config/opencode/skills/.
 - Chrome 137+ impide --load-extension en Google Chrome; la carga usa CDP
   Extensions.loadUnpacked (--enable-unsafe-extension-debugging, puerto local 9222+).
 
 ELEMENTOS VERIFICADOS / AMBIGUOS / PENDIENTES
 ---------------------------------------------
-VERIFICADOS (observados en snapshot): grid de productos, enlaces título/imagen, precio visible, SKU/marca visibles en algunas tarjetas, estructura main
+VERIFICADOS (observados en snapshot): grid de productos, enlaces título/imagen, precio visible, SKU visible en todas las tarjetas probadas (19/19 y 115/115), paginación oficial, estructura main
 AMBIGUOS: clases CSS específicas pueden variar; usar respaldo por texto/patrón y validación de compatibilidad
 PENDIENTES: Confirmar selectores exactos por ejecución en listado concreto antes de hardcodear (solo usar lo verificado). Si falta alguno -> reportar y detener.
   -> Confirmado 2026-10-16 en https://ferricentro.com/combos (Chrome 155):
      grid ol.products.list.items.product-items; tarjeta li.item.product.product-item;
      título a.product-item-link; imagen img.product-image-photo;
-     precio [data-price-type="finalPrice"] (data-price-amount); descuento .discount_percent.
+     precio [data-price-type="finalPrice"] (data-price-amount); descuento .discount_percent;
+     SKU form[data-product-sku] / "SKU: ..." visible; paginación li.pages-item-next a.action.next
+     y enlaces ?p=N del mismo pathname; total .toolbar-amount ("N artículos de M").

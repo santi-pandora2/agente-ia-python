@@ -6,7 +6,7 @@ Flujo:
  1. Localiza/abre la pestaña de la URL autorizada y la deja activa.
  2. Abre popup.html en una pestaña en segundo plano (contexto de la extensión).
  3. Desde ahí llama a chrome.tabs + chrome.scripting + chrome.downloads.
- 4. Descarga el CSV (sin diálogo) y lo reporta.
+ 4. Recorre todas las páginas del listado y descarga catálogo, actualización POS y excepciones (UTF-8).
 """
 import argparse
 import asyncio
@@ -26,35 +26,53 @@ EVALUAR = r"""
   if (!(host === 'ferricentro.com' || host.endsWith('.ferricentro.com')))
     return {ok:false, error:'dominio no autorizado: '+host};
   await chrome.scripting.executeScript({target:{tabId:tab.id}, files:['extractor.js']});
-  const res = await chrome.scripting.executeScript({target:{tabId:tab.id}, func:()=>window.extractProducts()});
+  const res = await chrome.scripting.executeScript({target:{tabId:tab.id}, func:()=>window.extractProductsAll(500)});
   const r = res && res[0] && res[0].result;
   if (!r) return {ok:false, error:'sin resultados'};
   if (!r.products || r.products.length === 0)
-    return {ok:false, error:'0 productos', warnings:r.warnings||[], errors:r.errors||[], url:tab.url};
-  const esc = f => { if (f==null) return ''; const s=String(f); return (s.includes(',')||s.includes('"')||s.includes('\n')||s.includes('\r')) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+    return {ok:false, error:'0 productos', warnings:r.warnings||[], errors:r.errors||[], url:tab.url, pages:r.pages||0};
+
   const fecha = new Date().toISOString();
-  const headers=['titulo','precio_oferta','descuento_porcentaje','url_producto','imagen_url','fecha_consulta','fuente_url'];
-  const lines=[headers.join(',')];
-  for (const p of r.products)
-    lines.push([esc(p.titulo),esc(p.precio_oferta),esc(p.descuento_porcentaje),esc(p.url_producto),esc(p.imagen_url),esc(fecha),esc(tab.url)].join(','));
-  const blob = new Blob([lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const ts = fecha.replace(/[:.]/g,'-');
-  const dlId = await chrome.downloads.download({url, filename:'ferricentro_productos_'+ts+'.csv', saveAs:false});
-  const limite = Date.now() + 30000;
-  let item = null;
-  while (Date.now() < limite) {
-    const it = await chrome.downloads.search({id: dlId});
-    if (it && it.length) {
-      item = it[0];
-      if (item.state === 'complete' || item.state === 'interrupted') break;
+
+  if (typeof window.buildInventoryFiles !== 'function')
+    return {ok:false, error:'popup.js no expuso buildInventoryFiles'};
+  const files = window.buildInventoryFiles(r.products, tab.url, fecha, 'Ferricentro');
+
+  async function bajar(nombre, texto) {
+    const blob = new Blob([texto],{type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const id = await chrome.downloads.download({url, filename:nombre, saveAs:false, conflictAction:'overwrite'});
+    const limite = Date.now() + 60000;
+    let item = null;
+    while (Date.now() < limite) {
+      const it = await chrome.downloads.search({id});
+      if (it && it.length) {
+        item = it[0];
+        if (item.state === 'complete' || item.state === 'interrupted') break;
+      }
+      await new Promise(r => setTimeout(r, 400));
     }
-    await new Promise(r => setTimeout(r, 400));
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    if (!item) return {ok:false, error:'descarga sin confirmación', filename:nombre};
+    if (item.state !== 'complete') return {ok:false, error:'descarga '+item.state+': '+(item.error||''), filename:item.filename||nombre};
+    return {ok:true, filename:item.filename||nombre, size:item.fileSize||0};
   }
-  if (!item) return {ok:false, error:'descarga sin confirmación', url:tab.url, count:r.count};
-  if (item.state !== 'complete')
-    return {ok:false, error:'descarga '+item.state+': '+(item.error||''), file:item.filename||'', url:tab.url};
-  return {ok:true, url:tab.url, count:r.count, file:item.filename||'', size:item.fileSize||0, warnings:(r.warnings||[]).slice(0,8)};
+
+  const catalogo = await bajar('catalogo_proveedor.csv', files.catalogo);
+  if (!catalogo.ok) return {ok:false, error:'catalogo_proveedor: '+catalogo.error, url:tab.url, count:r.count};
+  const pos = await bajar('actualizacion_pos.csv', files.actualizacion);
+  if (!pos.ok) return {ok:false, error:'actualizacion_pos: '+pos.error, url:tab.url, count:r.count};
+  const exc = await bajar('excepciones.csv', files.excepciones);
+  if (!exc.ok) return {ok:false, error:'excepciones: '+exc.error, url:tab.url, count:r.count};
+
+  return {
+    ok:true, url:tab.url, count:r.count, pages:r.pages||0, totalDeclared:r.totalDeclared||null,
+    counts:files.counts,
+    catalogFile:catalogo.filename, catalogSize:catalogo.size,
+    posFile:pos.filename, posSize:pos.size,
+    exceptionsFile:exc.filename, exceptionsSize:exc.size,
+    warnings:(r.warnings||[]).slice(0,12), errors:(r.errors||[]).slice(0,8)
+  };
 })()
 """
 
@@ -64,7 +82,7 @@ def _get(path: str):
         return json.load(r)
 
 
-async def cdp(ws_url, method, params=None, timeout=60):
+async def cdp(ws_url, method, params=None, timeout=120):
     async with websockets.connect(ws_url, max_size=50 * 1024 * 1024) as ws:
         await ws.send(json.dumps({"id": 1, "method": method, "params": params or {}}))
         while True:
@@ -116,6 +134,7 @@ async def main(url: str, ext_id: str):
 
     try:
         res = None
+        out = None
         for intento in range(3):
             lista = _get("/json/list")
             popup = next(t for t in lista if t["id"] == popup_id)
@@ -123,7 +142,7 @@ async def main(url: str, ext_id: str):
             out = await cdp(popup["webSocketDebuggerUrl"], "Runtime.evaluate", {
                 "expression": EVALUAR.replace("__URL__", json.dumps(url)),
                 "awaitPromise": True, "returnByValue": True,
-            }, timeout=120)
+            }, timeout=600)
             res = out.get("result", {}).get("result", {}).get("value")
             if isinstance(res, dict) and res.get("ok"):
                 break
@@ -133,16 +152,23 @@ async def main(url: str, ext_id: str):
                 continue
             break
         if not isinstance(res, dict):
-            print("ERROR: sin respuesta de la extensión:", json.dumps(out.get("result", {}), ensure_ascii=False)[:300])
+            print("ERROR: sin respuesta de la extensión:", json.dumps((out or {}).get("result", {}), ensure_ascii=False)[:300])
             return 1
         if res.get("ok"):
-            print(f"Extensión ejecutada: {res['count']} productos extraídos")
+            print(f"Extensión ejecutada: {res['count']} productos extraídos en {res.get('pages', 0)} página(s)")
+            if res.get("totalDeclared") is not None:
+                print(f"Total declarado por la categoría: {res['totalDeclared']}")
             for w in res.get("warnings", []):
                 print("  aviso:", w)
-            print(f"CSV guardado en: {res.get('file')} ({res.get('size', 0)} bytes)")
+            for e in res.get("errors", []):
+                print("  error:", e)
+            c = res.get('counts') or {}
+            print(f"Catálogo guardado en: {res.get('catalogFile')} ({res.get('catalogSize', 0)} bytes, {c.get('catalogo', 0)} filas)")
+            print(f"Actualización POS guardada en: {res.get('posFile')} ({res.get('posSize', 0)} bytes, {c.get('actualizacion', 0)} filas)")
+            print(f"Excepciones guardadas en: {res.get('exceptionsFile')} ({res.get('exceptionsSize', 0)} bytes, {c.get('excepciones', 0)} filas)")
             return 0
         print(f"ERROR: {res.get('error')}")
-        for w in res.get("warnings", [])[:5]:
+        for w in res.get("warnings", [])[:8]:
             print("  aviso:", w)
         return 1
     finally:
